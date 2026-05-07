@@ -1,0 +1,25 @@
+{
+  "name": "gunnafinds-discord-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "register": "node scripts/register-commands.mjs",
+    "deploy": "node scripts/deploy-wyspbyte.mjs",
+    "deploy:wyspbyte": "node scripts/deploy-wyspbyte.mjs",
+    "restart": "node scripts/restart-wyspbyte.mjs",
+    "restart:wyspbyte": "node scripts/restart-wyspbyte.mjs",
+    "logs": "node scripts/logs-wyspbyte.mjs",
+    "logs:wyspbyte": "node scripts/logs-wyspbyte.mjs",
+    "pm2:start": "pm2 start ecosystem.config.cjs --update-env",
+    "pm2:restart": "pm2 restart gunnafinds-bot --update-env",
+    "pm2:logs": "pm2 logs gunnafinds-bot",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "discord.js": "^14.19.3",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {}
+}
