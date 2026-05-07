@@ -27,6 +27,7 @@ import {
   buildOwnerOnlyCommandMessage,
   buildProductMessage,
   buildRankMessage,
+  buildRankSyncResultMessage,
   buildRestartDeniedMessage,
   buildRestartFailedMessage,
   buildRestartQueuedMessage,
@@ -686,6 +687,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.deferReply({ ephemeral: true });
       const result = await syncAll({ force: true });
       await interaction.editReply(buildSyncResultMessage(result));
+      return;
+    }
+
+    if (interaction.isChatInputCommand() && interaction.commandName === "sync-ranks") {
+      if (await replyOwnerOnly(interaction)) return;
+      await interaction.deferReply({ ephemeral: true });
+      const report = [];
+      await ensureActivityRoles(interaction.guild, {
+        canManageRole: canAssignRole,
+        report,
+      });
+      await interaction.editReply(buildRankSyncResultMessage(report));
       return;
     }
 

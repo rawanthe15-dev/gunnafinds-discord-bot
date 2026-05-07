@@ -19,6 +19,7 @@ test("welcome command is registered without a duplicate rules command", () => {
 test("activity and sync commands are registered", () => {
   assert.ok(commands.find((command) => command.name === "rank"));
   assert.ok(commands.find((command) => command.name === "sync-now"));
+  assert.ok(commands.find((command) => command.name === "sync-ranks"));
 });
 
 test("restart command is registered", () => {

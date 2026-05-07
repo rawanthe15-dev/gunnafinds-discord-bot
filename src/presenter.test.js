@@ -10,6 +10,7 @@ import {
   buildOwnerOnlyMessage,
   buildProductMessage,
   buildRankMessage,
+  buildRankSyncResultMessage,
   buildRulesPanelMessage,
   buildSetupCheckMessage,
   buildSetupServerResultMessage,
@@ -179,6 +180,18 @@ test("website, update, rank, and feed messages are no-ping", () => {
   assert.equal(update.allowedMentions.parse.length, 0);
   assert.equal(feed.allowedMentions.parse.length, 0);
   assert.equal(rank.ephemeral, true);
+});
+
+test("rank sync result reports emblem status", () => {
+  const message = buildRankSyncResultMessage([
+    { name: "Active Finder", iconStatus: "updated", detail: "Emblem updated." },
+    { name: "Trusted Finder", iconStatus: "unsupported", detail: "Server does not have role icons." },
+  ]);
+
+  assert.equal(message.ephemeral, true);
+  assert.match(message.embeds[0].data.title, /rank/i);
+  assert.match(message.embeds[0].data.fields[0].value, /updated/i);
+  assert.match(message.embeds[0].data.fields[1].value, /role icons/i);
 });
 
 test("find feed never exposes website click counts", () => {

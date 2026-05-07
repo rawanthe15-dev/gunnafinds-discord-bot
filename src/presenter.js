@@ -426,6 +426,43 @@ export function buildRankMessage(activity, roleName = null) {
   return { embeds: [embed], components: [], ephemeral: true };
 }
 
+function rankSyncStatusText(item) {
+  const prefix = item.created ? "Created role. " : "";
+  const detail = item.detail ? truncate(item.detail, 180) : "";
+  switch (item.iconStatus) {
+    case "updated":
+      return `${prefix}Emblem updated.`;
+    case "unsupported":
+      return `${prefix}Skipped: ${detail || "role icons are not available."}`;
+    case "permission-blocked":
+      return `${prefix}Blocked: ${detail}`;
+    case "failed":
+      return `${prefix}Failed: ${detail}`;
+    case "missing-asset":
+      return `${prefix}Skipped: ${detail}`;
+    default:
+      return `${prefix}${detail || "Checked."}`;
+  }
+}
+
+export function buildRankSyncResultMessage(report = []) {
+  const fields = report.length
+    ? report.map((item) => ({
+        name: truncate(item.name, 80),
+        value: rankSyncStatusText(item),
+        inline: false,
+      }))
+    : [{ name: "Ranks", value: "No rank roles were checked.", inline: false }];
+
+  const embed = new EmbedBuilder()
+    .setColor(report.length > 0 && report.every((item) => item.iconStatus === "updated") ? SUCCESS_COLOR : WARNING_COLOR)
+    .setTitle("Rank emblem sync")
+    .setDescription("Manual check for activity rank roles and Discord role emblems.")
+    .addFields(...fields.slice(0, 25));
+
+  return { embeds: [embed], components: [], ephemeral: true };
+}
+
 export function buildWelcomeMessage() {
   const embed = new EmbedBuilder()
     .setColor(BRAND_COLOR)

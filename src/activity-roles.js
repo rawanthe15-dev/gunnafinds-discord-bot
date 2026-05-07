@@ -38,18 +38,67 @@ export function guildSupportsRoleIcons(guild) {
   return Array.isArray(guild?.features) && guild.features.includes(ROLE_ICON_FEATURE);
 }
 
-async function syncActivityRoleIcon(guild, role, roleSpec, { canManageRole, logger }) {
-  if (!roleSpec.iconPath) return role;
-  if (!guildSupportsRoleIcons(guild)) return role;
-  if (!(await canManageRole(guild, role))) {
-    logger.warn(`Cannot set ${roleSpec.name} emblem. Give the bot Manage Roles and move its role above activity roles.`);
+function reportRankSync(report, item) {
+  report?.push(item);
+}
+
+async function syncActivityRoleIcon(guild, role, roleSpec, { canManageRole, logger, report, created }) {
+  if (!roleSpec.iconPath) {
+    reportRankSync(report, {
+      name: roleSpec.name,
+      created,
+      iconStatus: "missing-asset",
+      detail: "No emblem asset is configured for this rank.",
+    });
     return role;
   }
-  if (typeof role.setIcon !== "function") return role;
+  if (!guildSupportsRoleIcons(guild)) {
+    reportRankSync(report, {
+      name: roleSpec.name,
+      created,
+      iconStatus: "unsupported",
+      detail: "This Discord server does not currently have the role icons feature.",
+    });
+    return role;
+  }
+  if (!(await canManageRole(guild, role))) {
+    logger.warn(`Cannot set ${roleSpec.name} emblem. Give the bot Manage Roles and move its role above activity roles.`);
+    reportRankSync(report, {
+      name: roleSpec.name,
+      created,
+      iconStatus: "permission-blocked",
+      detail: "The bot needs Manage Roles and its highest role above this rank.",
+    });
+    return role;
+  }
+  if (typeof role.setIcon !== "function") {
+    reportRankSync(report, {
+      name: roleSpec.name,
+      created,
+      iconStatus: "unsupported",
+      detail: "This Discord.js role object cannot set role icons.",
+    });
+    return role;
+  }
 
   return role.setIcon(roleSpec.iconPath, ACTIVITY_ROLE_ICON_REASON).catch((error) => {
     logger.warn(`Could not set ${roleSpec.name} emblem:`, error.message);
+    reportRankSync(report, {
+      name: roleSpec.name,
+      created,
+      iconStatus: "failed",
+      detail: error.message,
+    });
     return role;
+  }).then((updatedRole) => {
+    if (updatedRole === role && report?.some((item) => item.name === roleSpec.name)) return updatedRole;
+    reportRankSync(report, {
+      name: roleSpec.name,
+      created,
+      iconStatus: "updated",
+      detail: "Emblem updated on the Discord role.",
+    });
+    return updatedRole;
   });
 }
 
@@ -59,6 +108,7 @@ export async function ensureActivityRoles(
     roles = ACTIVITY_ROLES,
     canManageRole = async () => true,
     logger = console,
+    report = null,
   } = {},
 ) {
   const fetchedRoles = await guild.roles.fetch();
@@ -66,15 +116,17 @@ export async function ensureActivityRoles(
 
   for (const roleSpec of roles) {
     let role = fetchedRoles.find((item) => item.name.toLowerCase() === roleSpec.name.toLowerCase());
+    let created = false;
     if (!role) {
       role = await guild.roles.create({
         name: roleSpec.name,
         color: roleSpec.color,
         reason: ACTIVITY_ROLE_REASON,
       });
+      created = true;
     }
 
-    ready.push(await syncActivityRoleIcon(guild, role, roleSpec, { canManageRole, logger }));
+    ready.push(await syncActivityRoleIcon(guild, role, roleSpec, { canManageRole, logger, report, created }));
   }
 
   return ready;

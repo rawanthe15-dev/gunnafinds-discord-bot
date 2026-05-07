@@ -34,6 +34,7 @@ test("guildSupportsRoleIcons checks the Discord role icon feature", () => {
 
 test("ensureActivityRoles updates existing role icons when supported", async () => {
   const iconUpdates = [];
+  const report = [];
   const existingRoles = ACTIVITY_ROLES.map((roleSpec) => ({
     name: roleSpec.name,
     setIcon: async (iconPath, reason) => {
@@ -54,6 +55,7 @@ test("ensureActivityRoles updates existing role icons when supported", async () 
   await ensureActivityRoles(guild, {
     canManageRole: async () => true,
     logger: { warn() {} },
+    report,
   });
 
   assert.equal(iconUpdates.length, ACTIVITY_ROLES.length);
@@ -62,10 +64,15 @@ test("ensureActivityRoles updates existing role icons when supported", async () 
     ACTIVITY_ROLES.map((role) => role.name),
   );
   assert.ok(iconUpdates.every((item) => item.reason === "GunnaFinds activity role emblem"));
+  assert.deepEqual(
+    report.map((item) => item.iconStatus),
+    ["updated", "updated", "updated"],
+  );
 });
 
 test("ensureActivityRoles skips icon edits when guild lacks role icons", async () => {
   const iconUpdates = [];
+  const report = [];
   const existingRoles = ACTIVITY_ROLES.map((roleSpec) => ({
     name: roleSpec.name,
     setIcon: async () => iconUpdates.push(roleSpec.name),
@@ -83,7 +90,43 @@ test("ensureActivityRoles skips icon edits when guild lacks role icons", async (
   await ensureActivityRoles(guild, {
     canManageRole: async () => true,
     logger: { warn() {} },
+    report,
   });
 
   assert.deepEqual(iconUpdates, []);
+  assert.deepEqual(
+    report.map((item) => item.iconStatus),
+    ["unsupported", "unsupported", "unsupported"],
+  );
+  assert.match(report[0].detail, /role icons/i);
+});
+
+test("ensureActivityRoles reports permission blocks", async () => {
+  const report = [];
+  const existingRoles = ACTIVITY_ROLES.map((roleSpec) => ({
+    name: roleSpec.name,
+    setIcon: async () => {
+      throw new Error("should not set icon without permission");
+    },
+  }));
+  const guild = {
+    features: ["ROLE_ICONS"],
+    roles: {
+      fetch: async () => existingRoles,
+      create: async () => {
+        throw new Error("should not create existing roles");
+      },
+    },
+  };
+
+  await ensureActivityRoles(guild, {
+    canManageRole: async () => false,
+    logger: { warn() {} },
+    report,
+  });
+
+  assert.deepEqual(
+    report.map((item) => item.iconStatus),
+    ["permission-blocked", "permission-blocked", "permission-blocked"],
+  );
 });

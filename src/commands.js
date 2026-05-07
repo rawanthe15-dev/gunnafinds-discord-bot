@@ -31,6 +31,10 @@ export const commands = [
     .setName("sync-now")
     .setDescription("Owner only: sync website announcements, updates, and finds now"),
   new SlashCommandBuilder()
+    .setName("sync-ranks")
+    .setDescription("Owner only: sync activity rank roles and emblems")
+    .setDMPermission(false),
+  new SlashCommandBuilder()
     .setName("welcome")
     .setDescription("Post the GunnaFinds welcome and verification panel"),
   new SlashCommandBuilder()
