@@ -50,6 +50,7 @@ import {
   parseResultCursor,
 } from "./presenter.js";
 import { canRestartBot, queueBotRestart, updateBotFromRepo } from "./restart.js";
+import { ensureActivityRoles, topActivityRoleName } from "./activity-roles.js";
 import { findProducts } from "./search-api.js";
 import {
   fetchAnnouncements,
@@ -77,11 +78,6 @@ let botState = await loadBotState(config.stateFile).catch((error) => {
 if (!botState) botState = await loadBotState("/tmp/gunnafinds-bot-state.json");
 const startedAt = Date.now();
 const PUBLIC_CHANNEL_NAMES = ["welcome", "rules", "announcements", "updates", "website"];
-const ACTIVITY_ROLES = [
-  { name: "Active Finder", score: 10, color: 0xf97316 },
-  { name: "Trusted Finder", score: 35, color: 0x60a5fa },
-  { name: "Gunna Elite", score: 90, color: 0x16a34a },
-];
 const stickyTimers = new Map();
 
 async function persistState() {
@@ -175,35 +171,10 @@ async function ensureVerifyRole(guild) {
   });
 }
 
-async function ensureActivityRoles(guild) {
-  const roles = await guild.roles.fetch();
-  const ready = [];
-  for (const roleSpec of ACTIVITY_ROLES) {
-    const existing = roles.find((role) => role.name.toLowerCase() === roleSpec.name.toLowerCase());
-    if (existing) {
-      ready.push(existing);
-      continue;
-    }
-    ready.push(
-      await guild.roles.create({
-        name: roleSpec.name,
-        color: roleSpec.color,
-        reason: "GunnaFinds activity roles",
-      }),
-    );
-  }
-  return ready;
-}
-
-function topActivityRoleName(activity) {
-  const score = activity?.score ?? 0;
-  return [...ACTIVITY_ROLES].reverse().find((role) => score >= role.score)?.name ?? null;
-}
-
 async function assignActivityRole(member, activity) {
   const roleName = topActivityRoleName(activity);
   if (!roleName || !member?.guild) return;
-  await ensureActivityRoles(member.guild).catch((error) => {
+  await ensureActivityRoles(member.guild, { canManageRole: canAssignRole }).catch((error) => {
     console.warn("Could not ensure activity roles:", error.message);
   });
   const roles = await member.guild.roles.fetch();
@@ -352,7 +323,7 @@ async function setupServer(interaction) {
   }
 
   const verifiedRole = await ensureVerifyRole(guild);
-  await ensureActivityRoles(guild);
+  await ensureActivityRoles(guild, { canManageRole: canAssignRole });
   if (!(await canAssignRole(guild, verifiedRole))) {
     missingPermissions.push(`Move the bot role above ${verifiedRole.name}.`);
   }
@@ -644,7 +615,7 @@ client.once(Events.ClientReady, async (readyClient) => {
   });
   const guild = await getPrimaryGuild().catch(() => null);
   if (guild) {
-    await ensureActivityRoles(guild).catch((error) => {
+    await ensureActivityRoles(guild, { canManageRole: canAssignRole }).catch((error) => {
       console.warn("Could not create activity roles on startup:", error.message);
     });
   }
