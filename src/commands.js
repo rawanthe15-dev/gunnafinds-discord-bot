@@ -30,6 +30,9 @@ export const commands = [
     .setName("setup-check")
     .setDescription("Check verification role and W2C channel setup"),
   new SlashCommandBuilder()
+    .setName("setup")
+    .setDescription("Set up verified access, welcome, rules, announcements, and W2C"),
+  new SlashCommandBuilder()
     .setName("setup-server")
     .setDescription("Create and lock welcome, rules, announcements, and verified channels"),
 ].map((command) => command.toJSON());

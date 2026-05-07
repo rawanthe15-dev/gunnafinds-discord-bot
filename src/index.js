@@ -421,7 +421,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
-    if (interaction.isChatInputCommand() && interaction.commandName === "setup-server") {
+    if (
+      interaction.isChatInputCommand() &&
+      (interaction.commandName === "setup" || interaction.commandName === "setup-server")
+    ) {
       if (await replyOwnerOnly(interaction)) return;
       await setupServer(interaction);
       return;
