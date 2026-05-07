@@ -119,8 +119,9 @@ BOT_RESTART_EXIT_CODE=1
 
 ## Discord Restart Command
 
-`/restart` restarts the bot from Discord. By default it works for members with
-Manage Server. To lock it to exact operators instead, set:
+`/restart` restarts the bot from Discord. By default it is locked to
+`WELCOME_OWNER_ID`, which defaults to `974731025479499806`. To allow exact
+operators instead, set:
 
 ```txt
 BOT_RESTART_USER_IDS=comma-separated Discord user IDs

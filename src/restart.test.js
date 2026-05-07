@@ -21,7 +21,7 @@ test("canRestartBot blocks non-operators when restart users are configured", () 
   assert.equal(canRestartBot(interaction, { restartUserIds: ["123"] }), false);
 });
 
-test("canRestartBot falls back to Manage Server permission", () => {
+test("canRestartBot does not allow Manage Server without a restart operator match", () => {
   const interaction = {
     user: { id: "999" },
     memberPermissions: {
@@ -29,7 +29,7 @@ test("canRestartBot falls back to Manage Server permission", () => {
     },
   };
 
-  assert.equal(canRestartBot(interaction, { restartUserIds: [] }), true);
+  assert.equal(canRestartBot(interaction, { restartUserIds: [] }), false);
 });
 
 test("queueBotRestart exits the process in exit mode", () => {

@@ -1,12 +1,7 @@
 import { exec } from "node:child_process";
-import { PermissionFlagsBits } from "discord.js";
 
 export function canRestartBot(interaction, config) {
-  if (config.restartUserIds.length > 0) {
-    return config.restartUserIds.includes(interaction.user.id);
-  }
-
-  return Boolean(interaction.memberPermissions?.has?.(PermissionFlagsBits.ManageGuild));
+  return config.restartUserIds.includes(interaction.user.id);
 }
 
 function normalizeRestartConfig(value) {

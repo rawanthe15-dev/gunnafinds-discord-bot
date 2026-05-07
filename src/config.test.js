@@ -50,6 +50,15 @@ test("readConfig builds restart controls", () => {
   assert.deepEqual(config.restartUserIds, ["123", "456"]);
 });
 
+test("readConfig defaults restart operators to the owner user", () => {
+  const config = readConfig({
+    DISCORD_TOKEN: "token",
+    CLIENT_ID: "client",
+  });
+
+  assert.deepEqual(config.restartUserIds, ["974731025479499806"]);
+});
+
 test("readConfig uses process exit restart mode on panel hosting", () => {
   const config = readConfig({
     DISCORD_TOKEN: "token",

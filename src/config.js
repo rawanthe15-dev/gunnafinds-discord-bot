@@ -16,6 +16,10 @@ function splitIds(value = "") {
     .filter(Boolean);
 }
 
+function firstNonBlank(...values) {
+  return values.find((value) => typeof value === "string" && value.trim());
+}
+
 function defaultRestartCommand(processName) {
   return [
     "if command -v pm2 >/dev/null 2>&1; then",
@@ -65,7 +69,7 @@ export function readConfig(env = process.env) {
   const announcementsApiUrl =
     env.ANNOUNCEMENTS_API_URL ?? (siteUrl ? `${siteUrl}/api/admin/announcements` : "");
   const botApiToken = env.BOT_API_TOKEN;
-  const welcomeOwnerId = env.WELCOME_OWNER_ID ?? "974731025479499806";
+  const welcomeOwnerId = env.WELCOME_OWNER_ID?.trim() || "974731025479499806";
   const verifyRoleId = env.VERIFY_ROLE_ID;
   const verifyRoleName = env.VERIFY_ROLE_NAME ?? "Verified";
   const findsChannelId = env.FINDS_CHANNEL_ID ?? DEFAULT_FINDS_CHANNEL_ID;
@@ -77,7 +81,7 @@ export function readConfig(env = process.env) {
   const restartModeValue = restartMode(env);
   const restartExitCodeValue = restartExitCode(env);
   const restartUserIds = splitIds(
-    env.BOT_RESTART_USER_IDS ?? env.DISCORD_OWNER_IDS ?? env.OWNER_IDS ?? "",
+    firstNonBlank(env.BOT_RESTART_USER_IDS, env.DISCORD_OWNER_IDS, env.OWNER_IDS, welcomeOwnerId),
   );
   const stateFile =
     env.BOT_STATE_FILE ??

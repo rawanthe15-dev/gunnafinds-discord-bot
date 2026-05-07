@@ -364,7 +364,7 @@ export function buildRestartDeniedMessage() {
     embeds: [
       guardEmbed(
         "Restart blocked",
-        "Only configured bot operators or members with Manage Server can restart the bot.",
+        "Only the configured bot owner or restart operators can restart the bot.",
       ),
     ],
     components: [],
