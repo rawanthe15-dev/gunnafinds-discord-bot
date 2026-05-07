@@ -16,6 +16,7 @@ const CHANNEL_IMAGE_URLS = {
   finds: `${DISCORD_ASSET_BASE_URL}/finds.png`,
   rules: `${DISCORD_ASSET_BASE_URL}/rules.png`,
   announcements: `${DISCORD_ASSET_BASE_URL}/announcements.png`,
+  website: `${DISCORD_ASSET_BASE_URL}/website.png`,
   w2c: `${DISCORD_ASSET_BASE_URL}/w2c.png`,
 };
 const VERIFY_BUTTON_ID = "verify:access";
@@ -351,6 +352,32 @@ export function buildStatusMessage({ clientUser, uptimeMs, emojiCount, findApiUr
   return { embeds: [embed], components: [], ephemeral: true };
 }
 
+export function buildRankMessage(activity, roleName = null) {
+  const score = activity?.score ?? 0;
+  const next =
+    score < 10
+      ? `${10 - score} points to Active Finder`
+      : score < 35
+        ? `${35 - score} points to Trusted Finder`
+        : score < 90
+          ? `${90 - score} points to Gunna Elite`
+          : "Top activity role reached";
+
+  const embed = new EmbedBuilder()
+    .setColor(SUCCESS_COLOR)
+    .setTitle("Activity rank")
+    .setDescription("Activity roles grow from useful searches, finds, and channel activity.")
+    .addFields(
+      { name: "Score", value: String(score), inline: true },
+      { name: "Searches", value: String(activity?.finds ?? 0), inline: true },
+      { name: "Messages", value: String(activity?.messages ?? 0), inline: true },
+      { name: "Current role", value: roleName ?? "Building up", inline: false },
+      { name: "Next step", value: next, inline: false },
+    );
+
+  return { embeds: [embed], components: [], ephemeral: true };
+}
+
 export function buildWelcomeMessage() {
   const embed = new EmbedBuilder()
     .setColor(BRAND_COLOR)
@@ -418,6 +445,31 @@ export function buildFindsPanelMessage() {
   return { embeds: [embed], components: [] };
 }
 
+export function buildWebsitePanelMessage(siteUrl = SITE_URL) {
+  const embed = new EmbedBuilder()
+    .setColor(BRAND_COLOR)
+    .setAuthor({ name: "GunnaFinds website" })
+    .setTitle("Open the live catalog")
+    .setURL(siteUrl)
+    .setDescription("Browse the full catalog, open product pages, compare agents, and use the finder from the website.")
+    .addFields(
+      { name: "Catalog", value: "Search products with images, prices, QC context, and agent routes.", inline: false },
+      { name: "Finder", value: "Use the website finder when you want a larger search workspace.", inline: false },
+    )
+    .setImage(CHANNEL_IMAGE_URLS.website)
+    .setFooter({ text: "Discord search stays in W2C. Full browsing lives on the website." });
+
+  const components = [
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setLabel("Open website").setStyle(ButtonStyle.Link).setURL(siteUrl),
+      new ButtonBuilder().setLabel("Open finder").setStyle(ButtonStyle.Link).setURL(`${siteUrl}/finder`),
+      new ButtonBuilder().setLabel("Browse catalog").setStyle(ButtonStyle.Link).setURL(`${siteUrl}/catalog`),
+    ),
+  ];
+
+  return { embeds: [embed], components };
+}
+
 export function buildAnnouncementsPanelMessage() {
   const embed = new EmbedBuilder()
     .setColor(BRAND_COLOR)
@@ -432,6 +484,81 @@ export function buildAnnouncementsPanelMessage() {
     .setFooter({ text: "Use W2C for search requests after verifying" });
 
   return { embeds: [embed], components: [] };
+}
+
+export function buildUpdatesPanelMessage(siteUrl = SITE_URL) {
+  const embed = new EmbedBuilder()
+    .setColor(SUCCESS_COLOR)
+    .setAuthor({ name: "GunnaFinds updates" })
+    .setTitle("Website updates")
+    .setDescription("Catalog refreshes, product-count changes, and website sync notices appear here automatically.")
+    .addFields(
+      { name: "No noise", value: "This channel stays read-only so updates remain easy to scan.", inline: false },
+      { name: "Synced source", value: "The bot watches the live website catalog and posts changes without pinging anyone.", inline: false },
+    )
+    .setImage(CHANNEL_IMAGE_URLS.website)
+    .setFooter({ text: "Updates sync from repgunna.xyz" });
+
+  return {
+    embeds: [embed],
+    components: [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setLabel("Open website").setStyle(ButtonStyle.Link).setURL(siteUrl),
+      ),
+    ],
+    allowedMentions: { parse: [] },
+  };
+}
+
+export function buildSyncedAnnouncementMessage(announcement) {
+  const embed = new EmbedBuilder()
+    .setColor(BRAND_COLOR)
+    .setAuthor({ name: "Website announcement" })
+    .setTitle(truncate(announcement.title, 240))
+    .setDescription(truncate(announcement.body, 1000))
+    .setImage(CHANNEL_IMAGE_URLS.announcements)
+    .setFooter({ text: "Synced from repgunna.xyz" });
+
+  if (announcement.link) embed.setURL(announcement.link);
+
+  const components = announcement.link
+    ? [
+        new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setLabel("Open update").setStyle(ButtonStyle.Link).setURL(announcement.link),
+        ),
+      ]
+    : [];
+
+  return { embeds: [embed], components, allowedMentions: { parse: [] } };
+}
+
+export function buildWebsiteUpdateMessage({ total, previousTotal, siteUrl = SITE_URL }) {
+  const delta =
+    Number.isFinite(previousTotal) && Number.isFinite(total)
+      ? total - previousTotal
+      : null;
+  const change =
+    delta && delta > 0
+      ? `${delta.toLocaleString()} new catalog items detected.`
+      : "The website catalog changed.";
+  const embed = new EmbedBuilder()
+    .setColor(SUCCESS_COLOR)
+    .setAuthor({ name: "Website update" })
+    .setTitle("Catalog refreshed")
+    .setDescription(change)
+    .addFields({ name: "Live catalog size", value: total.toLocaleString(), inline: true })
+    .setImage(CHANNEL_IMAGE_URLS.website)
+    .setFooter({ text: "Synced automatically from the website" });
+
+  return {
+    embeds: [embed],
+    components: [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setLabel("Open catalog").setStyle(ButtonStyle.Link).setURL(`${siteUrl}/catalog`),
+      ),
+    ],
+    allowedMentions: { parse: [] },
+  };
 }
 
 export function buildW2cSetupMessage(channelId) {
@@ -461,6 +588,52 @@ export function buildW2cSetupMessage(channelId) {
   ];
 
   return { embeds: [embed], components };
+}
+
+export function buildFindFeedMessage(product, siteUrl = SITE_URL) {
+  const price = product.price ?? "Price not listed";
+  const embed = new EmbedBuilder()
+    .setColor(product.image ? BRAND_COLOR : SUCCESS_COLOR)
+    .setAuthor({ name: product.reason ?? "GunnaFinds pick" })
+    .setTitle(truncate(product.name, 240))
+    .setURL(product.productUrl)
+    .setDescription("A clean catalog pick from the website feed. No pings, no repeats.")
+    .addFields(
+      { name: "Price", value: `**${price}**`, inline: true },
+      { name: "Source", value: "Website catalog", inline: true },
+    )
+    .setFooter({ text: "Automatic finds feed posts every 10 minutes" });
+
+  if (product.image) embed.setImage(product.image);
+
+  const firstAgent = product.agentLinks?.[0];
+  const buttons = [
+    new ButtonBuilder().setLabel("Open product").setStyle(ButtonStyle.Link).setURL(product.productUrl),
+    new ButtonBuilder().setLabel("Open catalog").setStyle(ButtonStyle.Link).setURL(`${siteUrl}/catalog`),
+  ];
+  if (firstAgent?.url) {
+    buttons.push(new ButtonBuilder().setLabel(`Open ${firstAgent.name}`).setStyle(ButtonStyle.Link).setURL(firstAgent.url));
+  }
+
+  return {
+    embeds: [embed],
+    components: [new ActionRowBuilder().addComponents(...buttons.slice(0, 5))],
+    allowedMentions: { parse: [] },
+  };
+}
+
+export function buildSyncResultMessage({ announcements, updates, finds }) {
+  const embed = new EmbedBuilder()
+    .setColor(SUCCESS_COLOR)
+    .setTitle("Sync complete")
+    .setDescription("Website announcements, catalog updates, and finds feed were checked.")
+    .addFields(
+      { name: "Announcements", value: String(announcements), inline: true },
+      { name: "Updates", value: String(updates), inline: true },
+      { name: "Finds", value: String(finds), inline: true },
+    );
+
+  return { embeds: [embed], components: [], ephemeral: true };
 }
 
 export function isVerifyButton(customId) {

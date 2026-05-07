@@ -5,15 +5,20 @@ import {
   buildChannelOnlyMessage,
   buildExpiredSessionMessage,
   buildFindsPanelMessage,
+  buildFindFeedMessage,
   buildGenericCommandErrorMessage,
   buildOwnerOnlyMessage,
   buildProductMessage,
+  buildRankMessage,
   buildRulesPanelMessage,
   buildSetupCheckMessage,
   buildSetupServerResultMessage,
   buildVerifyPermissionErrorMessage,
   buildVerifyRoleMissingMessage,
   buildVerifySuccessMessage,
+  buildWebsitePanelMessage,
+  buildWebsiteUpdateMessage,
+  buildUpdatesPanelMessage,
   buildW2cSetupMessage,
   buildWelcomeMessage,
   isVerifyButton,
@@ -159,8 +164,21 @@ test("setup panels explain channel and verification setup", () => {
   assert.match(finds.embeds[0].data.image.url, /assets\/discord\/finds\.png$/);
   assert.match(announcements.embeds[0].data.title, /announcements/i);
   assert.match(announcements.embeds[0].data.image.url, /assets\/discord\/announcements\.png$/);
+  assert.match(buildUpdatesPanelMessage().embeds[0].data.image.url, /assets\/discord\/website\.png$/);
   assert.equal(check.ephemeral, true);
   assert.match(check.embeds[0].data.title, /setup check/i);
+});
+
+test("website, update, rank, and feed messages are no-ping", () => {
+  const website = buildWebsitePanelMessage("https://repgunna.xyz");
+  const update = buildWebsiteUpdateMessage({ total: 2000, previousTotal: 1990 });
+  const feed = buildFindFeedMessage(result.items[0], "https://repgunna.xyz");
+  const rank = buildRankMessage({ score: 12, finds: 2, messages: 6, buttons: 0 }, "Active Finder");
+
+  assert.match(website.embeds[0].data.image.url, /assets\/discord\/website\.png$/);
+  assert.equal(update.allowedMentions.parse.length, 0);
+  assert.equal(feed.allowedMentions.parse.length, 0);
+  assert.equal(rank.ephemeral, true);
 });
 
 test("server setup result summarizes channel locking", () => {

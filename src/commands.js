@@ -21,6 +21,12 @@ export const commands = [
     .setName("bot-status")
     .setDescription("Show GunnaFinds bot and search API status"),
   new SlashCommandBuilder()
+    .setName("rank")
+    .setDescription("Show your GunnaFinds activity role progress"),
+  new SlashCommandBuilder()
+    .setName("sync-now")
+    .setDescription("Owner only: sync website announcements, updates, and finds now"),
+  new SlashCommandBuilder()
     .setName("welcome")
     .setDescription("Post the GunnaFinds welcome and verification panel"),
   new SlashCommandBuilder()
@@ -31,10 +37,10 @@ export const commands = [
     .setDescription("Check verification role and W2C channel setup"),
   new SlashCommandBuilder()
     .setName("setup")
-    .setDescription("Set up verified access, welcome, rules, announcements, and W2C"),
+    .setDescription("Set up verification, website, updates, finds, rules, announcements, and W2C"),
   new SlashCommandBuilder()
     .setName("setup-server")
-    .setDescription("Create and lock welcome, rules, announcements, and verified channels"),
+    .setDescription("Create and lock GunnaFinds channels, panels, and roles"),
 ].map((command) => command.toJSON());
 
 export async function registerCommands({ token, clientId, guildId }) {

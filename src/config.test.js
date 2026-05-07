@@ -32,4 +32,8 @@ test("readConfig uses verification defaults", () => {
 
   assert.equal(config.welcomeOwnerId, "974731025479499806");
   assert.equal(config.verifyRoleName, "Verified");
+  assert.equal(config.findsChannelId, "1502045050136428556");
+  assert.equal(config.feedApiUrl, "https://repgunna.xyz/api/bot/feed");
+  assert.equal(config.catalogApiUrl, "https://repgunna.xyz/api/catalog");
+  assert.equal(config.announcementsApiUrl, "https://repgunna.xyz/api/admin/announcements");
 });
