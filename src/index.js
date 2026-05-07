@@ -1,17 +1,26 @@
 import "dotenv/config";
-import { Client, Events, GatewayIntentBits, PermissionsBitField } from "discord.js";
+import {
+  ChannelType,
+  Client,
+  Events,
+  GatewayIntentBits,
+  PermissionsBitField,
+} from "discord.js";
 import { readConfig } from "./config.js";
 import { registerCommands } from "./commands.js";
 import {
   AGENT_EMOJI_NAMES,
   buildChannelOnlyMessage,
+  buildAnnouncementsPanelMessage,
   buildErrorMessage,
   buildExpiredSessionMessage,
   buildGenericCommandErrorMessage,
   buildOwnerOnlyMessage,
   buildOwnerOnlyCommandMessage,
   buildProductMessage,
+  buildRulesPanelMessage,
   buildSetupCheckMessage,
+  buildSetupServerResultMessage,
   buildStatusMessage,
   buildAlreadyVerifiedMessage,
   buildVerifyPermissionErrorMessage,
@@ -34,6 +43,7 @@ const config = readConfig();
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 let emojiMap = {};
 const startedAt = Date.now();
+const PUBLIC_CHANNEL_NAMES = ["welcome", "rules", "announcements"];
 
 async function loadAgentEmojis() {
   if (!config.guildId) return {};
@@ -110,6 +120,16 @@ async function resolveVerifyRole(guild) {
   return roles.find((role) => role.name.toLowerCase() === config.verifyRoleName.toLowerCase()) ?? null;
 }
 
+async function ensureVerifyRole(guild) {
+  const existing = await resolveVerifyRole(guild);
+  if (existing) return existing;
+
+  return guild.roles.create({
+    name: config.verifyRoleName,
+    reason: "GunnaFinds verification setup",
+  });
+}
+
 function payloadForEdit(message) {
   const { ephemeral, ...payload } = message;
   return payload;
@@ -121,6 +141,169 @@ async function canAssignRole(guild, role) {
   return (
     botMember.permissions.has(PermissionsBitField.Flags.ManageRoles) &&
     botMember.roles.highest.comparePositionTo(role) > 0
+  );
+}
+
+async function getBotMember(guild) {
+  return guild.members.fetchMe();
+}
+
+function hasGuildPermission(member, permission) {
+  return member.permissions.has(permission);
+}
+
+async function findTextChannelByName(guild, name) {
+  const channels = await guild.channels.fetch();
+  return channels.find((channel) => channel?.type === ChannelType.GuildText && channel.name === name) ?? null;
+}
+
+async function ensureTextChannel(guild, name, topic) {
+  const existing = await findTextChannelByName(guild, name);
+  if (existing) return existing;
+
+  return guild.channels.create({
+    name,
+    type: ChannelType.GuildText,
+    topic,
+    reason: "GunnaFinds server setup",
+  });
+}
+
+async function editChannelPermissions(channel, target, permissions) {
+  await channel.permissionOverwrites.edit(target, permissions, {
+    reason: "GunnaFinds verification setup",
+  });
+}
+
+async function postPanel(channel, message) {
+  await channel.send(message);
+}
+
+async function setupServer(interaction) {
+  await interaction.deferReply({ ephemeral: true });
+  const guild = interaction.guild;
+  const botMember = await getBotMember(guild);
+  const missingPermissions = [];
+
+  if (!hasGuildPermission(botMember, PermissionsBitField.Flags.ManageRoles)) {
+    missingPermissions.push("Give the bot Manage Roles.");
+  }
+  if (!hasGuildPermission(botMember, PermissionsBitField.Flags.ManageChannels)) {
+    missingPermissions.push("Give the bot Manage Channels.");
+  }
+  if (!hasGuildPermission(botMember, PermissionsBitField.Flags.SendMessages)) {
+    missingPermissions.push("Give the bot Send Messages.");
+  }
+
+  if (missingPermissions.length) {
+    await interaction.editReply(
+      payloadForEdit(
+        buildSetupServerResultMessage({
+          verifiedRole: null,
+          publicChannels: [],
+          w2cChannelId: config.allowedChannelId,
+          lockedCount: 0,
+          skippedCount: 0,
+          missingPermissions,
+        }),
+      ),
+    );
+    return;
+  }
+
+  const verifiedRole = await ensureVerifyRole(guild);
+  if (!(await canAssignRole(guild, verifiedRole))) {
+    missingPermissions.push(`Move the bot role above ${verifiedRole.name}.`);
+  }
+
+  const welcomeChannel = await ensureTextChannel(guild, "welcome", "Verify here to unlock the GunnaFinds server.");
+  const rulesChannel = await ensureTextChannel(guild, "rules", "Read-only rules for GunnaFinds members.");
+  const announcementsChannel = await ensureTextChannel(guild, "announcements", "Read-only GunnaFinds updates.");
+  const w2cChannel = await guild.channels.fetch(config.allowedChannelId).catch(() => null);
+  if (!w2cChannel || w2cChannel.type !== ChannelType.GuildText) {
+    missingPermissions.push(`Set ALLOWED_CHANNEL_ID to an existing W2C text channel. Current value: ${config.allowedChannelId}.`);
+  }
+
+  if (missingPermissions.length) {
+    await interaction.editReply(
+      payloadForEdit(
+        buildSetupServerResultMessage({
+          verifiedRole,
+          publicChannels: [welcomeChannel, rulesChannel, announcementsChannel],
+          w2cChannelId: w2cChannel?.id ?? config.allowedChannelId,
+          lockedCount: 0,
+          skippedCount: 0,
+          missingPermissions,
+        }),
+      ),
+    );
+    return;
+  }
+
+  const everyone = guild.roles.everyone;
+  const publicChannels = [welcomeChannel, rulesChannel, announcementsChannel];
+  const publicIds = new Set(publicChannels.map((channel) => channel.id));
+  let lockedCount = 0;
+  let skippedCount = 0;
+
+  for (const channel of publicChannels) {
+    await editChannelPermissions(channel, everyone, {
+      ViewChannel: true,
+      SendMessages: false,
+      AddReactions: false,
+    });
+    await editChannelPermissions(channel, verifiedRole, {
+      ViewChannel: true,
+      SendMessages: false,
+      AddReactions: false,
+    });
+    lockedCount += 1;
+  }
+
+  await editChannelPermissions(w2cChannel, everyone, {
+    ViewChannel: false,
+  });
+  await editChannelPermissions(w2cChannel, verifiedRole, {
+    ViewChannel: true,
+    SendMessages: true,
+    AddReactions: true,
+    UseApplicationCommands: true,
+  });
+  lockedCount += 1;
+
+  const channels = await guild.channels.fetch();
+  for (const channel of channels.values()) {
+    if (!channel || publicIds.has(channel.id) || channel.id === w2cChannel.id) continue;
+    if (!channel.permissionOverwrites) {
+      skippedCount += 1;
+      continue;
+    }
+
+    try {
+      await editChannelPermissions(channel, everyone, { ViewChannel: false });
+      await editChannelPermissions(channel, verifiedRole, { ViewChannel: true });
+      lockedCount += 1;
+    } catch (error) {
+      console.error(`Could not lock channel ${channel.id}:`, error);
+      skippedCount += 1;
+    }
+  }
+
+  await postPanel(welcomeChannel, buildWelcomeMessage());
+  await postPanel(rulesChannel, buildRulesPanelMessage());
+  await postPanel(announcementsChannel, buildAnnouncementsPanelMessage());
+  await postPanel(w2cChannel, buildW2cSetupMessage(w2cChannel.id));
+
+  await interaction.editReply(
+    payloadForEdit(
+      buildSetupServerResultMessage({
+        verifiedRole,
+        publicChannels,
+        w2cChannelId: w2cChannel.id,
+        lockedCount,
+        skippedCount,
+      }),
+    ),
   );
 }
 
@@ -235,6 +418,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isChatInputCommand() && interaction.commandName === "setup-check") {
       if (await replyOwnerOnly(interaction)) return;
       await replySetupCheck(interaction);
+      return;
+    }
+
+    if (interaction.isChatInputCommand() && interaction.commandName === "setup-server") {
+      if (await replyOwnerOnly(interaction)) return;
+      await setupServer(interaction);
       return;
     }
 

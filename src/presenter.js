@@ -140,6 +140,60 @@ export function buildSetupCheckMessage({
   return { embeds: [embed], components: [], ephemeral: true };
 }
 
+export function buildSetupServerResultMessage({
+  verifiedRole,
+  publicChannels,
+  w2cChannelId,
+  lockedCount,
+  skippedCount,
+  missingPermissions = [],
+}) {
+  const hasMissing = missingPermissions.length > 0;
+  const embed = new EmbedBuilder()
+    .setColor(hasMissing ? WARNING_COLOR : SUCCESS_COLOR)
+    .setTitle(hasMissing ? "Server setup needs permissions" : "Server setup complete")
+    .setDescription(
+      hasMissing
+        ? "I could not safely change every channel yet. Fix the listed bot permissions, then run `/setup-server` again."
+        : "Verification gate, read-only public channels, and W2C access are configured.",
+    )
+    .addFields(
+      {
+        name: "Verify role",
+        value: verifiedRole ? `Ready: **${truncate(verifiedRole.name, 64)}**` : "Not ready",
+        inline: false,
+      },
+      {
+        name: "Public read-only channels",
+        value: publicChannels.length
+          ? publicChannels.map((channel) => `<#${channel.id}>`).join(" / ")
+          : "None configured",
+        inline: false,
+      },
+      {
+        name: "Verified W2C channel",
+        value: w2cChannelId ? `<#${w2cChannelId}>` : "Not configured",
+        inline: false,
+      },
+      {
+        name: "Locked channels",
+        value: `${lockedCount} updated, ${skippedCount} skipped`,
+        inline: true,
+      },
+    )
+    .setFooter({ text: "Welcome, rules, and announcements stay visible but read-only" });
+
+  if (hasMissing) {
+    embed.addFields({
+      name: "Missing permissions",
+      value: missingPermissions.join("\n"),
+      inline: false,
+    });
+  }
+
+  return { embeds: [embed], components: [], ephemeral: true };
+}
+
 function emptyMessage(query) {
   const embed = new EmbedBuilder()
     .setColor(MUTED_COLOR)
@@ -316,6 +370,40 @@ export function buildWelcomeMessage() {
   ];
 
   return { embeds: [embed], components };
+}
+
+export function buildRulesPanelMessage() {
+  const embed = new EmbedBuilder()
+    .setColor(MUTED_COLOR)
+    .setAuthor({ name: "GunnaFinds rules" })
+    .setTitle("Rules for a cleaner server")
+    .setDescription("Read these before posting. Verification means you agree to keep the server useful.")
+    .addFields(
+      { name: "Use W2C correctly", value: "Keep product requests in the W2C channel and use `/find` for searchable results.", inline: false },
+      { name: "No spam or scams", value: "No fake stores, referral flooding, unsafe payment requests, or repeated command spam.", inline: false },
+      { name: "Buy carefully", value: "Check batch, size, seller, shipping cost, agent fees, and QC before ordering.", inline: false },
+      { name: "Respect members", value: "No harassment, doxxing, threats, or needless drama.", inline: false },
+    )
+    .setImage(OPEN_GRAPH_IMAGE_URL)
+    .setFooter({ text: "Press Verify in welcome to unlock member channels" });
+
+  return { embeds: [embed], components: [] };
+}
+
+export function buildAnnouncementsPanelMessage() {
+  const embed = new EmbedBuilder()
+    .setColor(BRAND_COLOR)
+    .setAuthor({ name: "GunnaFinds announcements" })
+    .setTitle("Announcements")
+    .setDescription("Important updates, catalog changes, bot notices, and community alerts will appear here.")
+    .addFields(
+      { name: "Signal only", value: "This channel is read-only so updates stay easy to scan.", inline: false },
+      { name: "What to expect", value: "New drops, import updates, verified sheet changes, and server notices.", inline: false },
+    )
+    .setImage(OPEN_GRAPH_IMAGE_URL)
+    .setFooter({ text: "Use W2C for search requests after verifying" });
+
+  return { embeds: [embed], components: [] };
 }
 
 export function buildW2cSetupMessage(channelId) {

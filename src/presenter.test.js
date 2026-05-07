@@ -1,12 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildAnnouncementsPanelMessage,
   buildChannelOnlyMessage,
   buildExpiredSessionMessage,
   buildGenericCommandErrorMessage,
   buildOwnerOnlyMessage,
   buildProductMessage,
+  buildRulesPanelMessage,
   buildSetupCheckMessage,
+  buildSetupServerResultMessage,
   buildVerifyPermissionErrorMessage,
   buildVerifyRoleMissingMessage,
   buildVerifySuccessMessage,
@@ -135,6 +138,8 @@ test("verify result messages are ephemeral", () => {
 
 test("setup panels explain channel and verification setup", () => {
   const w2c = buildW2cSetupMessage("1500964521882161297");
+  const rules = buildRulesPanelMessage();
+  const announcements = buildAnnouncementsPanelMessage();
   const check = buildSetupCheckMessage({
     allowedChannelId: "1500964521882161297",
     currentChannelId: "1500964521882161297",
@@ -145,8 +150,25 @@ test("setup panels explain channel and verification setup", () => {
 
   assert.match(w2c.embeds[0].data.title, /product searches/i);
   assert.match(w2c.embeds[0].data.description, /<#1500964521882161297>/);
+  assert.match(rules.embeds[0].data.title, /rules/i);
+  assert.match(announcements.embeds[0].data.title, /announcements/i);
   assert.equal(check.ephemeral, true);
   assert.match(check.embeds[0].data.title, /setup check/i);
+});
+
+test("server setup result summarizes channel locking", () => {
+  const message = buildSetupServerResultMessage({
+    verifiedRole: { name: "Verified" },
+    publicChannels: [{ id: "1" }, { id: "2" }, { id: "3" }],
+    w2cChannelId: "4",
+    lockedCount: 8,
+    skippedCount: 1,
+  });
+
+  assert.equal(message.ephemeral, true);
+  assert.match(message.embeds[0].data.title, /complete/i);
+  assert.match(message.embeds[0].data.fields[1].value, /<#1>/);
+  assert.match(message.embeds[0].data.fields[2].value, /<#4>/);
 });
 
 test("generic command errors do not mention search", () => {

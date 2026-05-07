@@ -29,6 +29,9 @@ export const commands = [
   new SlashCommandBuilder()
     .setName("setup-check")
     .setDescription("Check verification role and W2C channel setup"),
+  new SlashCommandBuilder()
+    .setName("setup-server")
+    .setDescription("Create and lock welcome, rules, announcements, and verified channels"),
 ].map((command) => command.toJSON());
 
 export async function registerCommands({ token, clientId, guildId }) {
