@@ -56,6 +56,13 @@ function truncate(value, max = 256) {
   return `${text.slice(0, max - 1).trim()}...`;
 }
 
+function feedReason(reason) {
+  const text = truncate(reason, 80);
+  if (!text) return "GunnaFinds pick";
+  if (/\bwebsite\s+clicks?\b/i.test(text)) return "Popular find";
+  return text;
+}
+
 function resultTone(index, total) {
   if (total <= 1) return "Single best match";
   if (index === 0) return "Best match";
@@ -352,6 +359,33 @@ export function buildStatusMessage({ clientUser, uptimeMs, emojiCount, findApiUr
   return { embeds: [embed], components: [], ephemeral: true };
 }
 
+export function buildRestartDeniedMessage() {
+  return {
+    embeds: [
+      guardEmbed(
+        "Restart blocked",
+        "Only configured bot operators or members with Manage Server can restart the bot.",
+      ),
+    ],
+    components: [],
+    ephemeral: true,
+  };
+}
+
+export function buildRestartQueuedMessage() {
+  return {
+    embeds: [
+      guardEmbed(
+        "Restart sent",
+        "I sent the restart command. The bot should come back online in a moment.",
+        SUCCESS_COLOR,
+      ),
+    ],
+    components: [],
+    ephemeral: true,
+  };
+}
+
 export function buildRankMessage(activity, roleName = null) {
   const score = activity?.score ?? 0;
   const next =
@@ -594,7 +628,7 @@ export function buildFindFeedMessage(product, siteUrl = SITE_URL) {
   const price = product.price ?? "Price not listed";
   const embed = new EmbedBuilder()
     .setColor(product.image ? BRAND_COLOR : SUCCESS_COLOR)
-    .setAuthor({ name: product.reason ?? "GunnaFinds pick" })
+    .setAuthor({ name: feedReason(product.reason) })
     .setTitle(truncate(product.name, 240))
     .setURL(product.productUrl)
     .setDescription("A clean catalog pick from the website feed. No pings, no repeats.")

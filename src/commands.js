@@ -21,6 +21,10 @@ export const commands = [
     .setName("bot-status")
     .setDescription("Show GunnaFinds bot and search API status"),
   new SlashCommandBuilder()
+    .setName("restart")
+    .setDescription("Restart the GunnaFinds Discord bot")
+    .setDMPermission(false),
+  new SlashCommandBuilder()
     .setName("rank")
     .setDescription("Show your GunnaFinds activity role progress"),
   new SlashCommandBuilder()

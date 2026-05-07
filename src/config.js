@@ -1,10 +1,31 @@
 const CANONICAL_SITE_URL = "https://repgunna.xyz";
 const OLD_VERCEL_SITE_URL = "https://repgunna.vercel.app";
 const DEFAULT_FINDS_CHANNEL_ID = "1502045050136428556";
+const DEFAULT_PROCESS_NAME = "gunnafinds-bot";
 
 function normalizeSiteUrl(value) {
   const siteUrl = value.replace(/\/+$/, "");
   return siteUrl === OLD_VERCEL_SITE_URL ? CANONICAL_SITE_URL : siteUrl;
+}
+
+function splitIds(value = "") {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function defaultRestartCommand(processName) {
+  return [
+    "if command -v pm2 >/dev/null 2>&1; then",
+    `  pm2 restart ${processName} --update-env || pm2 start src/index.js --name ${processName};`,
+    "elif command -v systemctl >/dev/null 2>&1; then",
+    `  systemctl --user restart ${processName};`,
+    "else",
+    '  echo "No restart manager found. Install pm2 or set BOT_RESTART_COMMAND.";',
+    "  exit 1;",
+    "fi",
+  ].join(" ");
 }
 
 export function readConfig(env = process.env) {
@@ -27,6 +48,11 @@ export function readConfig(env = process.env) {
   const announcementsChannelId = env.ANNOUNCEMENTS_CHANNEL_ID;
   const updatesChannelId = env.UPDATES_CHANNEL_ID;
   const websiteChannelId = env.WEBSITE_CHANNEL_ID;
+  const restartProcessName = env.BOT_PROCESS_NAME ?? DEFAULT_PROCESS_NAME;
+  const restartCommand = env.BOT_RESTART_COMMAND || defaultRestartCommand(restartProcessName);
+  const restartUserIds = splitIds(
+    env.BOT_RESTART_USER_IDS ?? env.DISCORD_OWNER_IDS ?? env.OWNER_IDS ?? "",
+  );
   const stateFile =
     env.BOT_STATE_FILE ??
     (env.PTERODACTYL_SERVER_UUID || env.SERVER_MEMORY
@@ -55,6 +81,8 @@ export function readConfig(env = process.env) {
     announcementsChannelId,
     updatesChannelId,
     websiteChannelId,
+    restartCommand,
+    restartUserIds,
     stateFile,
   };
 }

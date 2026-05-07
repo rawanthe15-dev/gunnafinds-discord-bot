@@ -181,6 +181,16 @@ test("website, update, rank, and feed messages are no-ping", () => {
   assert.equal(rank.ephemeral, true);
 });
 
+test("find feed never exposes website click counts", () => {
+  const feed = buildFindFeedMessage(
+    { ...result.items[0], reason: "2 website clicks" },
+    "https://repgunna.xyz",
+  );
+
+  assert.equal(feed.embeds[0].data.author.name, "Popular find");
+  assert.doesNotMatch(JSON.stringify(feed), /website clicks/i);
+});
+
 test("server setup result summarizes channel locking", () => {
   const message = buildSetupServerResultMessage({
     verifiedRole: { name: "Verified" },

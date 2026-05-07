@@ -27,6 +27,8 @@ import {
   buildOwnerOnlyCommandMessage,
   buildProductMessage,
   buildRankMessage,
+  buildRestartDeniedMessage,
+  buildRestartQueuedMessage,
   buildRulesPanelMessage,
   buildSetupCheckMessage,
   buildSetupServerResultMessage,
@@ -46,6 +48,7 @@ import {
   parseFilterCursor,
   parseResultCursor,
 } from "./presenter.js";
+import { canRestartBot, queueBotRestart } from "./restart.js";
 import { findProducts } from "./search-api.js";
 import {
   fetchAnnouncements,
@@ -678,6 +681,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
           latencyMs,
         }),
       );
+      return;
+    }
+
+    if (interaction.isChatInputCommand() && interaction.commandName === "restart") {
+      if (!canRestartBot(interaction, config)) {
+        await interaction.reply(buildRestartDeniedMessage());
+        return;
+      }
+      await interaction.reply(buildRestartQueuedMessage());
+      queueBotRestart(config.restartCommand);
       return;
     }
 

@@ -108,3 +108,12 @@ If wyspbyte uses a custom process manager, set:
 ```txt
 BOT_RESTART_COMMAND=your restart command
 ```
+
+## Discord Restart Command
+
+`/restart` restarts the bot from Discord. By default it works for members with
+Manage Server. To lock it to exact operators instead, set:
+
+```txt
+BOT_RESTART_USER_IDS=comma-separated Discord user IDs
+```

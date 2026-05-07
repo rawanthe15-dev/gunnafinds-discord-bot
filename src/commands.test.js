@@ -21,6 +21,13 @@ test("activity and sync commands are registered", () => {
   assert.ok(commands.find((command) => command.name === "sync-now"));
 });
 
+test("restart command is registered", () => {
+  const restart = commands.find((command) => command.name === "restart");
+
+  assert.ok(restart);
+  assert.equal(restart.dm_permission, false);
+});
+
 test("setup commands are registered", () => {
   assert.ok(commands.find((command) => command.name === "setup"));
   assert.ok(commands.find((command) => command.name === "setup-w2c"));

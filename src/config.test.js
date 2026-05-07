@@ -37,3 +37,15 @@ test("readConfig uses verification defaults", () => {
   assert.equal(config.catalogApiUrl, "https://repgunna.xyz/api/catalog");
   assert.equal(config.announcementsApiUrl, "https://repgunna.xyz/api/admin/announcements");
 });
+
+test("readConfig builds restart controls", () => {
+  const config = readConfig({
+    DISCORD_TOKEN: "token",
+    CLIENT_ID: "client",
+    BOT_PROCESS_NAME: "custom-bot",
+    BOT_RESTART_USER_IDS: "123, 456",
+  });
+
+  assert.match(config.restartCommand, /pm2 restart custom-bot/);
+  assert.deepEqual(config.restartUserIds, ["123", "456"]);
+});
