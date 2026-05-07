@@ -23,3 +23,13 @@ test("readConfig passes optional bot API token through", () => {
 
   assert.equal(config.botApiToken, "shared-secret");
 });
+
+test("readConfig uses verification defaults", () => {
+  const config = readConfig({
+    DISCORD_TOKEN: "token",
+    CLIENT_ID: "client",
+  });
+
+  assert.equal(config.welcomeOwnerId, "974731025479499806");
+  assert.equal(config.verifyRoleName, "Verified");
+});

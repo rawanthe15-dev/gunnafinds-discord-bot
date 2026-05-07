@@ -15,6 +15,9 @@ export function readConfig(env = process.env) {
   const siteUrl = normalizeSiteUrl(env.SITE_URL ?? env.PUBLIC_SITE_URL ?? CANONICAL_SITE_URL);
   const findApiUrl = env.FIND_API_URL ?? (siteUrl ? `${siteUrl}/api/bot/find` : "");
   const botApiToken = env.BOT_API_TOKEN;
+  const welcomeOwnerId = env.WELCOME_OWNER_ID ?? "974731025479499806";
+  const verifyRoleId = env.VERIFY_ROLE_ID;
+  const verifyRoleName = env.VERIFY_ROLE_NAME ?? "Verified";
 
   if (!token) throw new Error("Missing DISCORD_TOKEN");
   if (!clientId) throw new Error("Missing CLIENT_ID");
@@ -27,5 +30,8 @@ export function readConfig(env = process.env) {
     allowedChannelId,
     findApiUrl,
     botApiToken,
+    welcomeOwnerId,
+    verifyRoleId,
+    verifyRoleName,
   };
 }

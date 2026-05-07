@@ -1,4 +1,4 @@
-import { PermissionFlagsBits, REST, Routes, SlashCommandBuilder } from "discord.js";
+import { REST, Routes, SlashCommandBuilder } from "discord.js";
 
 export const commands = [
   new SlashCommandBuilder()
@@ -22,12 +22,7 @@ export const commands = [
     .setDescription("Show GunnaFinds bot and search API status"),
   new SlashCommandBuilder()
     .setName("welcome")
-    .setDescription("Post the GunnaFinds welcome panel")
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
-  new SlashCommandBuilder()
-    .setName("rules")
-    .setDescription("Post the GunnaFinds rules panel")
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+    .setDescription("Post the GunnaFinds welcome and verification panel"),
 ].map((command) => command.toJSON());
 
 export async function registerCommands({ token, clientId, guildId }) {

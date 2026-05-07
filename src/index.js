@@ -8,10 +8,13 @@ import {
   buildErrorMessage,
   buildExpiredSessionMessage,
   buildOwnerOnlyMessage,
+  buildOwnerOnlyCommandMessage,
   buildProductMessage,
-  buildRulesMessage,
   buildStatusMessage,
+  buildVerifyRoleMissingMessage,
+  buildVerifySuccessMessage,
   buildWelcomeMessage,
+  isVerifyButton,
   parseFilterCursor,
   parseResultCursor,
 } from "./presenter.js";
@@ -92,6 +95,27 @@ async function checkFindApiLatency() {
   return Date.now() - started;
 }
 
+async function resolveVerifyRole(guild) {
+  if (!guild) return null;
+  if (config.verifyRoleId) {
+    return guild.roles.fetch(config.verifyRoleId).catch(() => null);
+  }
+
+  const roles = await guild.roles.fetch();
+  return roles.find((role) => role.name.toLowerCase() === config.verifyRoleName.toLowerCase()) ?? null;
+}
+
+async function verifyMember(interaction) {
+  const role = await resolveVerifyRole(interaction.guild);
+  if (!role) {
+    await interaction.reply(buildVerifyRoleMissingMessage(config.verifyRoleName));
+    return;
+  }
+
+  await interaction.member.roles.add(role);
+  await interaction.reply(buildVerifySuccessMessage(role.name));
+}
+
 client.once(Events.ClientReady, async (readyClient) => {
   emojiMap = await loadAgentEmojis().catch((error) => {
     console.warn("Could not load custom agent emojis:", error.message);
@@ -131,16 +155,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     if (interaction.isChatInputCommand() && interaction.commandName === "welcome") {
+      if (interaction.user.id !== config.welcomeOwnerId) {
+        await interaction.reply(buildOwnerOnlyCommandMessage(config.welcomeOwnerId));
+        return;
+      }
       await interaction.reply(buildWelcomeMessage());
       return;
     }
 
-    if (interaction.isChatInputCommand() && interaction.commandName === "rules") {
-      await interaction.reply(buildRulesMessage());
-      return;
-    }
-
     if (interaction.isButton()) {
+      if (isVerifyButton(interaction.customId)) {
+        await verifyMember(interaction);
+        return;
+      }
+
       if (interaction.channelId !== config.allowedChannelId) {
         await interaction.reply(buildChannelOnlyMessage(config.allowedChannelId));
         return;

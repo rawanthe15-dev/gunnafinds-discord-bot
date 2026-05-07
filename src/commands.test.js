@@ -11,7 +11,7 @@ test("find command does not use autocomplete", () => {
   assert.equal(query.autocomplete, undefined);
 });
 
-test("welcome and rules commands are registered", () => {
+test("welcome command is registered without a duplicate rules command", () => {
   assert.ok(commands.find((command) => command.name === "welcome"));
-  assert.ok(commands.find((command) => command.name === "rules"));
+  assert.equal(commands.find((command) => command.name === "rules"), undefined);
 });

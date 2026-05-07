@@ -12,6 +12,7 @@ const SUCCESS_COLOR = 0x16a34a;
 const WARNING_COLOR = 0xf59e0b;
 const SITE_URL = "https://repgunna.xyz";
 const OPEN_GRAPH_IMAGE_URL = `${SITE_URL}/opengraph-image`;
+const VERIFY_BUTTON_ID = "verify:access";
 
 export const AGENT_EMOJI_NAMES = {
   lovegobuy: "lovegobuy",
@@ -88,8 +89,21 @@ export function buildChannelOnlyMessage(channelId) {
   return {
     embeds: [
       guardEmbed(
-        "Search channel only",
-        `Run \`/find\` in <#${channelId}> so product requests stay clean and easy to review.`,
+        "Use the W2C channel",
+        `Run \`/find\` in <#${channelId}>. That keeps W2C requests, QC previews, and agent links in one clean place.`,
+      ),
+    ],
+    components: [],
+    ephemeral: true,
+  };
+}
+
+export function buildOwnerOnlyCommandMessage(ownerId) {
+  return {
+    embeds: [
+      guardEmbed(
+        "Owner command only",
+        `Only <@${ownerId}> can post the welcome and verification panel.`,
       ),
     ],
     components: [],
@@ -151,6 +165,33 @@ export function buildErrorMessage() {
   };
 }
 
+export function buildVerifyRoleMissingMessage(roleName) {
+  return {
+    embeds: [
+      guardEmbed(
+        "Verify role is not ready",
+        `I could not find the verification role. Create a role named **${truncate(roleName, 64)}** or set \`VERIFY_ROLE_ID\`, then try again.`,
+      ),
+    ],
+    components: [],
+    ephemeral: true,
+  };
+}
+
+export function buildVerifySuccessMessage(roleName) {
+  return {
+    embeds: [
+      guardEmbed(
+        "Access unlocked",
+        `You are verified. The **${truncate(roleName, 64)}** role has been added to your account.`,
+        SUCCESS_COLOR,
+      ),
+    ],
+    components: [],
+    ephemeral: true,
+  };
+}
+
 export function buildStatusMessage({ clientUser, uptimeMs, emojiCount, findApiUrl, latencyMs }) {
   const seconds = Math.floor(uptimeMs / 1000);
   const minutes = Math.floor(seconds / 60);
@@ -183,20 +224,23 @@ export function buildWelcomeMessage() {
     .setURL(SITE_URL)
     .setDescription(
       [
-        "Search finds, compare QC photos, and open the same product through your preferred agent.",
-        "Use `/find` with a product name or model code when you want the bot to pull matches into Discord.",
+        "Search verified finds, compare QC photos, and open the same item through your preferred agent.",
+        "Read the rules, verify, then use the W2C channel when you want the bot to pull product matches into Discord.",
       ].join("\n"),
     )
     .addFields(
-      { name: "Start", value: "Use `/find jordan 4 black cat` or browse the live catalog.", inline: false },
-      { name: "Agents", value: "LoveGoBuy, USFans, Oopbuy, Litbuy, and Joyagoo links are kept together.", inline: false },
-      { name: "QC first", value: "Results prioritize products with images so the preview matches the item.", inline: false },
+      { name: "Rule 1", value: "Keep W2C requests in the W2C channel. Use `/find` there so results stay searchable.", inline: false },
+      { name: "Rule 2", value: "No fake links, spam, scams, unsafe payments, or referral flooding.", inline: false },
+      { name: "Rule 3", value: "Check size, batch, seller, shipping, and agent fees before buying.", inline: false },
+      { name: "Rule 4", value: "Respect members and staff. No harassment, doxxing, or drama farming.", inline: false },
+      { name: "What the bot does", value: "It pulls product previews with images, prices, and agent buttons from the live catalog.", inline: false },
     )
     .setImage(OPEN_GRAPH_IMAGE_URL)
-    .setFooter({ text: "GunnaFinds routes every rep find through your agent" });
+    .setFooter({ text: "Press Verify to unlock the server" });
 
   const components = [
     new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(VERIFY_BUTTON_ID).setLabel("Verify").setStyle(ButtonStyle.Success),
       new ButtonBuilder().setLabel("Open catalog").setStyle(ButtonStyle.Link).setURL(SITE_URL),
       new ButtonBuilder().setLabel("W2C finder").setStyle(ButtonStyle.Link).setURL(`${SITE_URL}/finder`),
     ),
@@ -205,22 +249,8 @@ export function buildWelcomeMessage() {
   return { embeds: [embed], components };
 }
 
-export function buildRulesMessage() {
-  const embed = new EmbedBuilder()
-    .setColor(MUTED_COLOR)
-    .setAuthor({ name: "GunnaFinds server rules" })
-    .setTitle("Keep finds clean and useful")
-    .setDescription("Follow these basics so search results, QC checks, and agent links stay easy to trust.")
-    .addFields(
-      { name: "Use the right channel", value: "Run `/find` in the search channel and keep chat noise out of result threads.", inline: false },
-      { name: "No spam", value: "Avoid repeated commands, fake links, referral spam, or unrelated marketplace posts.", inline: false },
-      { name: "Check before buying", value: "Confirm size, batch, seller, shipping, and agent fees before placing an order.", inline: false },
-      { name: "Respect the server", value: "No harassment, doxxing, scams, or unsafe payment requests.", inline: false },
-    )
-    .setImage(OPEN_GRAPH_IMAGE_URL)
-    .setFooter({ text: "Use /welcome for the quick start panel" });
-
-  return { embeds: [embed], components: [] };
+export function isVerifyButton(customId) {
+  return customId === VERIFY_BUTTON_ID;
 }
 
 export function buildProductMessage(

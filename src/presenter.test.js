@@ -5,8 +5,10 @@ import {
   buildExpiredSessionMessage,
   buildOwnerOnlyMessage,
   buildProductMessage,
-  buildRulesMessage,
+  buildVerifyRoleMissingMessage,
+  buildVerifySuccessMessage,
   buildWelcomeMessage,
+  isVerifyButton,
   parseFilterCursor,
   parseResultCursor,
 } from "./presenter.js";
@@ -68,6 +70,7 @@ test("buildChannelOnlyMessage explains where the command works", () => {
 
   assert.equal(message.ephemeral, true);
   assert.match(message.embeds[0].data.description, /<#1500964521882161297>/);
+  assert.match(message.embeds[0].data.title, /w2c/i);
 });
 
 test("parseResultCursor decodes valid component ids without storing raw queries", () => {
@@ -110,12 +113,17 @@ test("ephemeral guard messages are safe for stale or shared controls", () => {
   assert.match(buildOwnerOnlyMessage().embeds[0].data.title, /private/i);
 });
 
-test("welcome and rules messages include the shared open graph image", () => {
+test("welcome message includes rules, open graph image, and verify button", () => {
   const welcome = buildWelcomeMessage();
-  const rules = buildRulesMessage();
 
   assert.equal(welcome.embeds[0].data.image.url, "https://repgunna.xyz/opengraph-image");
-  assert.equal(rules.embeds[0].data.image.url, "https://repgunna.xyz/opengraph-image");
   assert.match(welcome.embeds[0].data.title, /welcome/i);
-  assert.match(rules.embeds[0].data.title, /clean and useful/i);
+  assert.match(welcome.embeds[0].data.fields[0].name, /rule/i);
+  assert.equal(welcome.components[0].components[0].data.custom_id, "verify:access");
+  assert.equal(isVerifyButton("verify:access"), true);
+});
+
+test("verify result messages are ephemeral", () => {
+  assert.equal(buildVerifyRoleMissingMessage("Verified").ephemeral, true);
+  assert.equal(buildVerifySuccessMessage("Verified").ephemeral, true);
 });
