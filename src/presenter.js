@@ -11,7 +11,13 @@ const MUTED_COLOR = 0x111827;
 const SUCCESS_COLOR = 0x16a34a;
 const WARNING_COLOR = 0xf59e0b;
 const SITE_URL = "https://repgunna.xyz";
-const OPEN_GRAPH_IMAGE_URL = `${SITE_URL}/opengraph-image`;
+const DISCORD_ASSET_BASE_URL = "https://raw.githubusercontent.com/rawanthe15-dev/gunnafinds-discord-bot/main/assets/discord";
+const CHANNEL_IMAGE_URLS = {
+  finds: `${DISCORD_ASSET_BASE_URL}/finds.png`,
+  rules: `${DISCORD_ASSET_BASE_URL}/rules.png`,
+  announcements: `${DISCORD_ASSET_BASE_URL}/announcements.png`,
+  w2c: `${DISCORD_ASSET_BASE_URL}/w2c.png`,
+};
 const VERIFY_BUTTON_ID = "verify:access";
 
 export const AGENT_EMOJI_NAMES = {
@@ -358,7 +364,7 @@ export function buildWelcomeMessage() {
       { name: "Rule 4", value: "Respect members and staff. No harassment, doxxing, or drama farming.", inline: false },
       { name: "What the bot does", value: "It pulls product previews with images, prices, and agent buttons from the live catalog.", inline: false },
     )
-    .setImage(OPEN_GRAPH_IMAGE_URL)
+    .setImage(CHANNEL_IMAGE_URLS.finds)
     .setFooter({ text: "Press Verify to unlock the server" });
 
   const components = [
@@ -384,7 +390,7 @@ export function buildRulesPanelMessage() {
       { name: "Buy carefully", value: "Check batch, size, seller, shipping cost, agent fees, and QC before ordering.", inline: false },
       { name: "Respect members", value: "No harassment, doxxing, threats, or needless drama.", inline: false },
     )
-    .setImage(OPEN_GRAPH_IMAGE_URL)
+    .setImage(CHANNEL_IMAGE_URLS.rules)
     .setFooter({ text: "Press Verify in welcome to unlock member channels" });
 
   return { embeds: [embed], components: [] };
@@ -400,7 +406,7 @@ export function buildAnnouncementsPanelMessage() {
       { name: "Signal only", value: "This channel is read-only so updates stay easy to scan.", inline: false },
       { name: "What to expect", value: "New drops, import updates, verified sheet changes, and server notices.", inline: false },
     )
-    .setImage(OPEN_GRAPH_IMAGE_URL)
+    .setImage(CHANNEL_IMAGE_URLS.announcements)
     .setFooter({ text: "Use W2C for search requests after verifying" });
 
   return { embeds: [embed], components: [] };
@@ -422,7 +428,7 @@ export function buildW2cSetupMessage(channelId) {
       { name: "What you get", value: "Matched products, preview images, listed price, catalog link, and agent checkout buttons.", inline: false },
       { name: "If it misses", value: "Try fewer words, remove seller names, or turn the QC filter off.", inline: false },
     )
-    .setImage(OPEN_GRAPH_IMAGE_URL)
+    .setImage(CHANNEL_IMAGE_URLS.w2c)
     .setFooter({ text: "W2C searches stay cleaner when everyone uses one channel" });
 
   const components = [

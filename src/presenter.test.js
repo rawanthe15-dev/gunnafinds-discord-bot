@@ -120,10 +120,10 @@ test("ephemeral guard messages are safe for stale or shared controls", () => {
   assert.match(buildOwnerOnlyMessage().embeds[0].data.title, /private/i);
 });
 
-test("welcome message includes rules, open graph image, and verify button", () => {
+test("welcome message includes rules, channel image, and verify button", () => {
   const welcome = buildWelcomeMessage();
 
-  assert.equal(welcome.embeds[0].data.image.url, "https://repgunna.xyz/opengraph-image");
+  assert.match(welcome.embeds[0].data.image.url, /assets\/discord\/finds\.png$/);
   assert.match(welcome.embeds[0].data.title, /welcome/i);
   assert.match(welcome.embeds[0].data.fields[0].name, /rule/i);
   assert.equal(welcome.components[0].components[0].data.custom_id, "verify:access");
@@ -150,8 +150,11 @@ test("setup panels explain channel and verification setup", () => {
 
   assert.match(w2c.embeds[0].data.title, /product searches/i);
   assert.match(w2c.embeds[0].data.description, /<#1500964521882161297>/);
+  assert.match(w2c.embeds[0].data.image.url, /assets\/discord\/w2c\.png$/);
   assert.match(rules.embeds[0].data.title, /rules/i);
+  assert.match(rules.embeds[0].data.image.url, /assets\/discord\/rules\.png$/);
   assert.match(announcements.embeds[0].data.title, /announcements/i);
+  assert.match(announcements.embeds[0].data.image.url, /assets\/discord\/announcements\.png$/);
   assert.equal(check.ephemeral, true);
   assert.match(check.embeds[0].data.title, /setup check/i);
 });
