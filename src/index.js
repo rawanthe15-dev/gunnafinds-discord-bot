@@ -60,7 +60,10 @@ import {
 
 const config = readConfig();
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+  ],
 });
 let emojiMap = {};
 let botState = await loadBotState(config.stateFile).catch((error) => {
@@ -196,9 +199,17 @@ function topActivityRoleName(activity) {
 async function assignActivityRole(member, activity) {
   const roleName = topActivityRoleName(activity);
   if (!roleName || !member?.guild) return;
+  await ensureActivityRoles(member.guild).catch((error) => {
+    console.warn("Could not ensure activity roles:", error.message);
+  });
   const roles = await member.guild.roles.fetch();
   const role = roles.find((item) => item.name.toLowerCase() === roleName.toLowerCase());
-  if (!role || member.roles.cache.has(role.id) || !(await canAssignRole(member.guild, role))) return;
+  if (!role) return;
+  if (member.roles.cache.has(role.id)) return;
+  if (!(await canAssignRole(member.guild, role))) {
+    console.warn(`Cannot assign ${roleName}. Give the bot Manage Roles and move its role above activity roles.`);
+    return;
+  }
   await member.roles.add(role, "GunnaFinds activity role").catch((error) => {
     console.warn(`Could not assign activity role ${roleName}:`, error.message);
   });
@@ -627,6 +638,12 @@ client.once(Events.ClientReady, async (readyClient) => {
     console.warn("Could not load custom agent emojis:", error.message);
     return {};
   });
+  const guild = await getPrimaryGuild().catch(() => null);
+  if (guild) {
+    await ensureActivityRoles(guild).catch((error) => {
+      console.warn("Could not create activity roles on startup:", error.message);
+    });
+  }
   console.log(`GunnaFinds bot online as ${readyClient.user.tag}`);
   console.log(`Loaded ${Object.keys(emojiMap).length} custom agent emojis`);
   startBackgroundSync();
@@ -645,6 +662,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await replyWithSearch(interaction, query, 0, qcOnly, interaction.user.id);
       const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
       await trackActivity(member, "find", 3);
+      if (interaction.channel) scheduleStickyRefresh(interaction.channel, "w2c");
       return;
     }
 
@@ -665,6 +683,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     if (interaction.isChatInputCommand() && interaction.commandName === "rank") {
       const activity = botState.activity.users[interaction.user.id] ?? {};
+      const member = await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);
+      await assignActivityRole(member, activity);
       await interaction.reply(buildRankMessage(activity, topActivityRoleName(activity)));
       return;
     }
