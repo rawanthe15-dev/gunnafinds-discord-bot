@@ -117,6 +117,14 @@ BOT_RESTART_MODE=exit
 BOT_RESTART_EXIT_CODE=1
 ```
 
+Before restarting, `/restart` also updates the deployed repo and installs
+production dependencies:
+
+```txt
+BOT_UPDATE_BEFORE_RESTART=true
+BOT_UPDATE_COMMAND=git pull --ff-only origin main && npm ci --omit=dev
+```
+
 ## Discord Restart Command
 
 `/restart` restarts the bot from Discord. By default it is locked to

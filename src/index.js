@@ -28,6 +28,7 @@ import {
   buildProductMessage,
   buildRankMessage,
   buildRestartDeniedMessage,
+  buildRestartFailedMessage,
   buildRestartQueuedMessage,
   buildRulesPanelMessage,
   buildSetupCheckMessage,
@@ -48,7 +49,7 @@ import {
   parseFilterCursor,
   parseResultCursor,
 } from "./presenter.js";
-import { canRestartBot, queueBotRestart } from "./restart.js";
+import { canRestartBot, queueBotRestart, updateBotFromRepo } from "./restart.js";
 import { findProducts } from "./search-api.js";
 import {
   fetchAnnouncements,
@@ -689,8 +690,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
         await interaction.reply(buildRestartDeniedMessage());
         return;
       }
-      await interaction.reply(buildRestartQueuedMessage());
-      queueBotRestart(config);
+      await interaction.deferReply({ ephemeral: true });
+      try {
+        await updateBotFromRepo(config);
+        await interaction.editReply(buildRestartQueuedMessage());
+        queueBotRestart(config);
+      } catch (error) {
+        console.error("Bot update before restart failed:", error);
+        await interaction.editReply(buildRestartFailedMessage(error));
+      }
       return;
     }
 

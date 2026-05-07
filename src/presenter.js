@@ -377,8 +377,22 @@ export function buildRestartQueuedMessage() {
     embeds: [
       guardEmbed(
         "Restarting now",
-        "The bot process is restarting. It should come back online in a moment.",
+        "Pulled the latest bot repo, installed production dependencies, and the process is restarting now.",
         SUCCESS_COLOR,
+      ),
+    ],
+    components: [],
+    ephemeral: true,
+  };
+}
+
+export function buildRestartFailedMessage(error) {
+  const reason = truncate(error?.message ?? "Unknown update error", 160);
+  return {
+    embeds: [
+      guardEmbed(
+        "Restart update failed",
+        `I did not restart the bot because the repo update or install failed: ${reason}`,
       ),
     ],
     components: [],

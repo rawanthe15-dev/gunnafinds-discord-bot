@@ -59,6 +59,28 @@ test("readConfig defaults restart operators to the owner user", () => {
   assert.deepEqual(config.restartUserIds, ["974731025479499806"]);
 });
 
+test("readConfig updates the repo before restart by default", () => {
+  const config = readConfig({
+    DISCORD_TOKEN: "token",
+    CLIENT_ID: "client",
+  });
+
+  assert.equal(config.updateBeforeRestart, true);
+  assert.equal(config.updateCommand, "git pull --ff-only origin main && npm ci --omit=dev");
+});
+
+test("readConfig allows restart repo update overrides", () => {
+  const config = readConfig({
+    DISCORD_TOKEN: "token",
+    CLIENT_ID: "client",
+    BOT_UPDATE_BEFORE_RESTART: "false",
+    BOT_UPDATE_COMMAND: "git pull && npm install --omit=dev",
+  });
+
+  assert.equal(config.updateBeforeRestart, false);
+  assert.equal(config.updateCommand, "git pull && npm install --omit=dev");
+});
+
 test("readConfig uses process exit restart mode on panel hosting", () => {
   const config = readConfig({
     DISCORD_TOKEN: "token",

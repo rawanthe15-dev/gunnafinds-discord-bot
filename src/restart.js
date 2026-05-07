@@ -1,5 +1,7 @@
 import { exec } from "node:child_process";
 
+const UPDATE_MAX_BUFFER = 5 * 1024 * 1024;
+
 export function canRestartBot(interaction, config) {
   return config.restartUserIds.includes(interaction.user.id);
 }
@@ -18,6 +20,35 @@ function normalizeRestartConfig(value) {
     restartCommand: value?.restartCommand,
     restartExitCode: value?.restartExitCode ?? 1,
   };
+}
+
+export function updateBotFromRepo(config, options = {}) {
+  const {
+    execFn = exec,
+    logger = console,
+    maxBuffer = UPDATE_MAX_BUFFER,
+  } = options;
+
+  if (!config.updateBeforeRestart) {
+    return Promise.resolve({ skipped: true });
+  }
+
+  if (!config.updateCommand) {
+    return Promise.reject(new Error("Missing update command"));
+  }
+
+  return new Promise((resolve, reject) => {
+    execFn(config.updateCommand, { maxBuffer }, (error, stdout = "", stderr = "") => {
+      if (stdout.trim()) logger.log(stdout.trim());
+      if (stderr.trim()) logger.error(stderr.trim());
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve({ skipped: false, stdout, stderr });
+    });
+  });
 }
 
 export function queueBotRestart(restartConfig, options = {}) {

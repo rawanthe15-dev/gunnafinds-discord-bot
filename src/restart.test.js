@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { PermissionFlagsBits } from "discord.js";
-import { canRestartBot, queueBotRestart } from "./restart.js";
+import { canRestartBot, queueBotRestart, updateBotFromRepo } from "./restart.js";
 
 test("canRestartBot allows configured restart operators", () => {
   const interaction = {
@@ -69,4 +69,47 @@ test("queueBotRestart runs a restart command in command mode", () => {
   );
 
   assert.deepEqual(commands, ["pm2 restart gunnafinds-bot"]);
+});
+
+test("updateBotFromRepo runs the configured update command", async () => {
+  const commands = [];
+
+  await updateBotFromRepo(
+    {
+      updateBeforeRestart: true,
+      updateCommand: "git pull --ff-only origin main && npm ci --omit=dev",
+    },
+    {
+      execFn: (command, options, callback) => {
+        commands.push({ command, maxBuffer: options.maxBuffer });
+        callback(null, "updated", "");
+      },
+      logger: { log() {}, error() {}, warn() {} },
+    },
+  );
+
+  assert.deepEqual(commands, [
+    {
+      command: "git pull --ff-only origin main && npm ci --omit=dev",
+      maxBuffer: 5 * 1024 * 1024,
+    },
+  ]);
+});
+
+test("updateBotFromRepo skips when disabled", async () => {
+  const commands = [];
+
+  const result = await updateBotFromRepo(
+    { updateBeforeRestart: false, updateCommand: "git pull" },
+    {
+      execFn: (command, options, callback) => {
+        commands.push(command);
+        callback(null, "", "");
+      },
+      logger: { log() {}, error() {}, warn() {} },
+    },
+  );
+
+  assert.deepEqual(commands, []);
+  assert.deepEqual(result, { skipped: true });
 });

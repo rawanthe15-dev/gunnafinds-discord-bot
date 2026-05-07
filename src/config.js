@@ -3,6 +3,7 @@ const OLD_VERCEL_SITE_URL = "https://repgunna.vercel.app";
 const DEFAULT_FINDS_CHANNEL_ID = "1502045050136428556";
 const DEFAULT_PROCESS_NAME = "gunnafinds-bot";
 const DEFAULT_RESTART_EXIT_CODE = 1;
+const DEFAULT_UPDATE_COMMAND = "git pull --ff-only origin main && npm ci --omit=dev";
 
 function normalizeSiteUrl(value) {
   const siteUrl = value.replace(/\/+$/, "");
@@ -18,6 +19,11 @@ function splitIds(value = "") {
 
 function firstNonBlank(...values) {
   return values.find((value) => typeof value === "string" && value.trim());
+}
+
+function envBoolean(value, fallback) {
+  if (value === undefined) return fallback;
+  return !["0", "false", "no", "off"].includes(String(value).trim().toLowerCase());
 }
 
 function defaultRestartCommand(processName) {
@@ -80,6 +86,8 @@ export function readConfig(env = process.env) {
   const restartCommand = env.BOT_RESTART_COMMAND || defaultRestartCommand(restartProcessName);
   const restartModeValue = restartMode(env);
   const restartExitCodeValue = restartExitCode(env);
+  const updateBeforeRestart = envBoolean(env.BOT_UPDATE_BEFORE_RESTART, true);
+  const updateCommand = env.BOT_UPDATE_COMMAND?.trim() || DEFAULT_UPDATE_COMMAND;
   const restartUserIds = splitIds(
     firstNonBlank(env.BOT_RESTART_USER_IDS, env.DISCORD_OWNER_IDS, env.OWNER_IDS, welcomeOwnerId),
   );
@@ -115,6 +123,8 @@ export function readConfig(env = process.env) {
     restartCommand,
     restartExitCode: restartExitCodeValue,
     restartUserIds,
+    updateBeforeRestart,
+    updateCommand,
     stateFile,
   };
 }
