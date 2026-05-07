@@ -9,7 +9,9 @@ import {
   buildExpiredSessionMessage,
   buildOwnerOnlyMessage,
   buildProductMessage,
+  buildRulesMessage,
   buildStatusMessage,
+  buildWelcomeMessage,
   parseFilterCursor,
   parseResultCursor,
 } from "./presenter.js";
@@ -80,25 +82,6 @@ async function updateSearchMessage(interaction, sessionToken, index, qcOnly) {
   await interaction.editReply(message);
 }
 
-async function respondWithAutocomplete(interaction) {
-  const query = interaction.options.getFocused();
-  if (typeof query !== "string" || query.trim().length < 2) {
-    await interaction.respond([]);
-    return;
-  }
-
-  const result = await findProducts(config.findApiUrl, query, {
-    limit: 10,
-    qcOnly: false,
-    botApiToken: config.botApiToken,
-  });
-  const choices = result.items.slice(0, 10).map((item) => ({
-    name: item.name.slice(0, 100),
-    value: item.name.slice(0, 100),
-  }));
-  await interaction.respond(choices);
-}
-
 async function checkFindApiLatency() {
   const started = Date.now();
   await findProducts(config.findApiUrl, "jordan", {
@@ -120,11 +103,6 @@ client.once(Events.ClientReady, async (readyClient) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
-    if (interaction.isAutocomplete() && interaction.commandName === "find") {
-      await respondWithAutocomplete(interaction);
-      return;
-    }
-
     if (interaction.isChatInputCommand() && interaction.commandName === "find") {
       if (interaction.channelId !== config.allowedChannelId) {
         await interaction.reply(buildChannelOnlyMessage(config.allowedChannelId));
@@ -138,8 +116,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     if (interaction.isChatInputCommand() && interaction.commandName === "bot-status") {
+      await interaction.deferReply({ ephemeral: true });
       const latencyMs = await checkFindApiLatency().catch(() => null);
-      await interaction.reply(
+      await interaction.editReply(
         buildStatusMessage({
           clientUser: client.user,
           uptimeMs: Date.now() - startedAt,
@@ -148,6 +127,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
           latencyMs,
         }),
       );
+      return;
+    }
+
+    if (interaction.isChatInputCommand() && interaction.commandName === "welcome") {
+      await interaction.reply(buildWelcomeMessage());
+      return;
+    }
+
+    if (interaction.isChatInputCommand() && interaction.commandName === "rules") {
+      await interaction.reply(buildRulesMessage());
       return;
     }
 

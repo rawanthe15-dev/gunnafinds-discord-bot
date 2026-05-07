@@ -10,6 +10,8 @@ const BRAND_COLOR = 0xf97316;
 const MUTED_COLOR = 0x111827;
 const SUCCESS_COLOR = 0x16a34a;
 const WARNING_COLOR = 0xf59e0b;
+const SITE_URL = "https://repgunna.xyz";
+const OPEN_GRAPH_IMAGE_URL = `${SITE_URL}/opengraph-image`;
 
 export const AGENT_EMOJI_NAMES = {
   lovegobuy: "lovegobuy",
@@ -171,6 +173,54 @@ export function buildStatusMessage({ clientUser, uptimeMs, emojiCount, findApiUr
     .setFooter({ text: "Use deploy scripts from the bot folder for wyspbyte restarts" });
 
   return { embeds: [embed], components: [], ephemeral: true };
+}
+
+export function buildWelcomeMessage() {
+  const embed = new EmbedBuilder()
+    .setColor(BRAND_COLOR)
+    .setAuthor({ name: "repgunna" })
+    .setTitle("Welcome to GunnaFinds")
+    .setURL(SITE_URL)
+    .setDescription(
+      [
+        "Search finds, compare QC photos, and open the same product through your preferred agent.",
+        "Use `/find` with a product name or model code when you want the bot to pull matches into Discord.",
+      ].join("\n"),
+    )
+    .addFields(
+      { name: "Start", value: "Use `/find jordan 4 black cat` or browse the live catalog.", inline: false },
+      { name: "Agents", value: "LoveGoBuy, USFans, Oopbuy, Litbuy, and Joyagoo links are kept together.", inline: false },
+      { name: "QC first", value: "Results prioritize products with images so the preview matches the item.", inline: false },
+    )
+    .setImage(OPEN_GRAPH_IMAGE_URL)
+    .setFooter({ text: "GunnaFinds routes every rep find through your agent" });
+
+  const components = [
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setLabel("Open catalog").setStyle(ButtonStyle.Link).setURL(SITE_URL),
+      new ButtonBuilder().setLabel("W2C finder").setStyle(ButtonStyle.Link).setURL(`${SITE_URL}/finder`),
+    ),
+  ];
+
+  return { embeds: [embed], components };
+}
+
+export function buildRulesMessage() {
+  const embed = new EmbedBuilder()
+    .setColor(MUTED_COLOR)
+    .setAuthor({ name: "GunnaFinds server rules" })
+    .setTitle("Keep finds clean and useful")
+    .setDescription("Follow these basics so search results, QC checks, and agent links stay easy to trust.")
+    .addFields(
+      { name: "Use the right channel", value: "Run `/find` in the search channel and keep chat noise out of result threads.", inline: false },
+      { name: "No spam", value: "Avoid repeated commands, fake links, referral spam, or unrelated marketplace posts.", inline: false },
+      { name: "Check before buying", value: "Confirm size, batch, seller, shipping, and agent fees before placing an order.", inline: false },
+      { name: "Respect the server", value: "No harassment, doxxing, scams, or unsafe payment requests.", inline: false },
+    )
+    .setImage(OPEN_GRAPH_IMAGE_URL)
+    .setFooter({ text: "Use /welcome for the quick start panel" });
+
+  return { embeds: [embed], components: [] };
 }
 
 export function buildProductMessage(

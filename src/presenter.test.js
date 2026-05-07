@@ -5,6 +5,8 @@ import {
   buildExpiredSessionMessage,
   buildOwnerOnlyMessage,
   buildProductMessage,
+  buildRulesMessage,
+  buildWelcomeMessage,
   parseFilterCursor,
   parseResultCursor,
 } from "./presenter.js";
@@ -106,4 +108,14 @@ test("ephemeral guard messages are safe for stale or shared controls", () => {
   assert.equal(buildOwnerOnlyMessage().ephemeral, true);
   assert.match(buildExpiredSessionMessage().embeds[0].data.title, /expired/i);
   assert.match(buildOwnerOnlyMessage().embeds[0].data.title, /private/i);
+});
+
+test("welcome and rules messages include the shared open graph image", () => {
+  const welcome = buildWelcomeMessage();
+  const rules = buildRulesMessage();
+
+  assert.equal(welcome.embeds[0].data.image.url, "https://repgunna.xyz/opengraph-image");
+  assert.equal(rules.embeds[0].data.image.url, "https://repgunna.xyz/opengraph-image");
+  assert.match(welcome.embeds[0].data.title, /welcome/i);
+  assert.match(rules.embeds[0].data.title, /clean and useful/i);
 });
