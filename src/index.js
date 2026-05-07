@@ -14,6 +14,7 @@ import {
   buildAnnouncementsPanelMessage,
   buildErrorMessage,
   buildExpiredSessionMessage,
+  buildFindsPanelMessage,
   buildGenericCommandErrorMessage,
   buildOwnerOnlyMessage,
   buildOwnerOnlyCommandMessage,
@@ -201,6 +202,7 @@ async function setupServer(interaction) {
         buildSetupServerResultMessage({
           verifiedRole: null,
           publicChannels: [],
+          findsChannel: null,
           w2cChannelId: config.allowedChannelId,
           lockedCount: 0,
           skippedCount: 0,
@@ -219,6 +221,7 @@ async function setupServer(interaction) {
   const welcomeChannel = await ensureTextChannel(guild, "welcome", "Verify here to unlock the GunnaFinds server.");
   const rulesChannel = await ensureTextChannel(guild, "rules", "Read-only rules for GunnaFinds members.");
   const announcementsChannel = await ensureTextChannel(guild, "announcements", "Read-only GunnaFinds updates.");
+  const findsChannel = await ensureTextChannel(guild, "finds", "Verified member finds and catalog drops.");
   const w2cChannel = await guild.channels.fetch(config.allowedChannelId).catch(() => null);
   if (!w2cChannel || w2cChannel.type !== ChannelType.GuildText) {
     missingPermissions.push(`Set ALLOWED_CHANNEL_ID to an existing W2C text channel. Current value: ${config.allowedChannelId}.`);
@@ -230,6 +233,7 @@ async function setupServer(interaction) {
         buildSetupServerResultMessage({
           verifiedRole,
           publicChannels: [welcomeChannel, rulesChannel, announcementsChannel],
+          findsChannel,
           w2cChannelId: w2cChannel?.id ?? config.allowedChannelId,
           lockedCount: 0,
           skippedCount: 0,
@@ -292,6 +296,7 @@ async function setupServer(interaction) {
   await postPanel(welcomeChannel, buildWelcomeMessage());
   await postPanel(rulesChannel, buildRulesPanelMessage());
   await postPanel(announcementsChannel, buildAnnouncementsPanelMessage());
+  await postPanel(findsChannel, buildFindsPanelMessage());
   await postPanel(w2cChannel, buildW2cSetupMessage(w2cChannel.id));
 
   await interaction.editReply(
@@ -299,6 +304,7 @@ async function setupServer(interaction) {
       buildSetupServerResultMessage({
         verifiedRole,
         publicChannels,
+        findsChannel,
         w2cChannelId: w2cChannel.id,
         lockedCount,
         skippedCount,

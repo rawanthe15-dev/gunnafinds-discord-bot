@@ -4,6 +4,7 @@ import {
   buildAnnouncementsPanelMessage,
   buildChannelOnlyMessage,
   buildExpiredSessionMessage,
+  buildFindsPanelMessage,
   buildGenericCommandErrorMessage,
   buildOwnerOnlyMessage,
   buildProductMessage,
@@ -138,6 +139,7 @@ test("verify result messages are ephemeral", () => {
 
 test("setup panels explain channel and verification setup", () => {
   const w2c = buildW2cSetupMessage("1500964521882161297");
+  const finds = buildFindsPanelMessage();
   const rules = buildRulesPanelMessage();
   const announcements = buildAnnouncementsPanelMessage();
   const check = buildSetupCheckMessage({
@@ -153,6 +155,8 @@ test("setup panels explain channel and verification setup", () => {
   assert.match(w2c.embeds[0].data.image.url, /assets\/discord\/w2c\.png$/);
   assert.match(rules.embeds[0].data.title, /rules/i);
   assert.match(rules.embeds[0].data.image.url, /assets\/discord\/rules\.png$/);
+  assert.match(finds.embeds[0].data.title, /finds/i);
+  assert.match(finds.embeds[0].data.image.url, /assets\/discord\/finds\.png$/);
   assert.match(announcements.embeds[0].data.title, /announcements/i);
   assert.match(announcements.embeds[0].data.image.url, /assets\/discord\/announcements\.png$/);
   assert.equal(check.ephemeral, true);
@@ -163,6 +167,7 @@ test("server setup result summarizes channel locking", () => {
   const message = buildSetupServerResultMessage({
     verifiedRole: { name: "Verified" },
     publicChannels: [{ id: "1" }, { id: "2" }, { id: "3" }],
+    findsChannel: { id: "5" },
     w2cChannelId: "4",
     lockedCount: 8,
     skippedCount: 1,
@@ -171,7 +176,8 @@ test("server setup result summarizes channel locking", () => {
   assert.equal(message.ephemeral, true);
   assert.match(message.embeds[0].data.title, /complete/i);
   assert.match(message.embeds[0].data.fields[1].value, /<#1>/);
-  assert.match(message.embeds[0].data.fields[2].value, /<#4>/);
+  assert.match(message.embeds[0].data.fields[2].value, /<#5>/);
+  assert.match(message.embeds[0].data.fields[3].value, /<#4>/);
 });
 
 test("generic command errors do not mention search", () => {

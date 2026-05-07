@@ -149,6 +149,7 @@ export function buildSetupCheckMessage({
 export function buildSetupServerResultMessage({
   verifiedRole,
   publicChannels,
+  findsChannel,
   w2cChannelId,
   lockedCount,
   skippedCount,
@@ -174,6 +175,11 @@ export function buildSetupServerResultMessage({
         value: publicChannels.length
           ? publicChannels.map((channel) => `<#${channel.id}>`).join(" / ")
           : "None configured",
+        inline: false,
+      },
+      {
+        name: "Verified finds channel",
+        value: findsChannel ? `<#${findsChannel.id}>` : "Not configured",
         inline: false,
       },
       {
@@ -392,6 +398,22 @@ export function buildRulesPanelMessage() {
     )
     .setImage(CHANNEL_IMAGE_URLS.rules)
     .setFooter({ text: "Press Verify in welcome to unlock member channels" });
+
+  return { embeds: [embed], components: [] };
+}
+
+export function buildFindsPanelMessage() {
+  const embed = new EmbedBuilder()
+    .setColor(BRAND_COLOR)
+    .setAuthor({ name: "GunnaFinds catalog" })
+    .setTitle("Finds")
+    .setDescription("Curated drops, clean product leads, and catalog-ready finds belong here.")
+    .addFields(
+      { name: "Keep it useful", value: "Post clear names, seller context, QC notes, and agent links when available.", inline: false },
+      { name: "Use W2C for requests", value: "Use the W2C channel when you want the bot to search for a product.", inline: false },
+    )
+    .setImage(CHANNEL_IMAGE_URLS.finds)
+    .setFooter({ text: "Verified members can browse and share finds here" });
 
   return { embeds: [embed], components: [] };
 }
