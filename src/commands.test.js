@@ -15,3 +15,8 @@ test("welcome command is registered without a duplicate rules command", () => {
   assert.ok(commands.find((command) => command.name === "welcome"));
   assert.equal(commands.find((command) => command.name === "rules"), undefined);
 });
+
+test("setup commands are registered", () => {
+  assert.ok(commands.find((command) => command.name === "setup-w2c"));
+  assert.ok(commands.find((command) => command.name === "setup-check"));
+});

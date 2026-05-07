@@ -3,10 +3,14 @@ import assert from "node:assert/strict";
 import {
   buildChannelOnlyMessage,
   buildExpiredSessionMessage,
+  buildGenericCommandErrorMessage,
   buildOwnerOnlyMessage,
   buildProductMessage,
+  buildSetupCheckMessage,
+  buildVerifyPermissionErrorMessage,
   buildVerifyRoleMissingMessage,
   buildVerifySuccessMessage,
+  buildW2cSetupMessage,
   buildWelcomeMessage,
   isVerifyButton,
   parseFilterCursor,
@@ -125,5 +129,29 @@ test("welcome message includes rules, open graph image, and verify button", () =
 
 test("verify result messages are ephemeral", () => {
   assert.equal(buildVerifyRoleMissingMessage("Verified").ephemeral, true);
+  assert.equal(buildVerifyPermissionErrorMessage("Verified").ephemeral, true);
   assert.equal(buildVerifySuccessMessage("Verified").ephemeral, true);
+});
+
+test("setup panels explain channel and verification setup", () => {
+  const w2c = buildW2cSetupMessage("1500964521882161297");
+  const check = buildSetupCheckMessage({
+    allowedChannelId: "1500964521882161297",
+    currentChannelId: "1500964521882161297",
+    role: { name: "Verified" },
+    roleError: "Verified",
+    canManageRoles: true,
+  });
+
+  assert.match(w2c.embeds[0].data.title, /product searches/i);
+  assert.match(w2c.embeds[0].data.description, /<#1500964521882161297>/);
+  assert.equal(check.ephemeral, true);
+  assert.match(check.embeds[0].data.title, /setup check/i);
+});
+
+test("generic command errors do not mention search", () => {
+  const message = buildGenericCommandErrorMessage();
+
+  assert.equal(message.ephemeral, true);
+  assert.doesNotMatch(message.embeds[0].data.title, /search/i);
 });

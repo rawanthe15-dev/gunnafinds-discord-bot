@@ -23,6 +23,12 @@ export const commands = [
   new SlashCommandBuilder()
     .setName("welcome")
     .setDescription("Post the GunnaFinds welcome and verification panel"),
+  new SlashCommandBuilder()
+    .setName("setup-w2c")
+    .setDescription("Post the W2C search channel instructions"),
+  new SlashCommandBuilder()
+    .setName("setup-check")
+    .setDescription("Check verification role and W2C channel setup"),
 ].map((command) => command.toJSON());
 
 export async function registerCommands({ token, clientId, guildId }) {

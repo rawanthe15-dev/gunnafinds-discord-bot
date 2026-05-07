@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Client, Events, GatewayIntentBits } from "discord.js";
+import { Client, Events, GatewayIntentBits, PermissionsBitField } from "discord.js";
 import { readConfig } from "./config.js";
 import { registerCommands } from "./commands.js";
 import {
@@ -7,13 +7,18 @@ import {
   buildChannelOnlyMessage,
   buildErrorMessage,
   buildExpiredSessionMessage,
+  buildGenericCommandErrorMessage,
   buildOwnerOnlyMessage,
   buildOwnerOnlyCommandMessage,
   buildProductMessage,
+  buildSetupCheckMessage,
   buildStatusMessage,
+  buildAlreadyVerifiedMessage,
+  buildVerifyPermissionErrorMessage,
   buildVerifyRoleMissingMessage,
   buildVerifySuccessMessage,
   buildWelcomeMessage,
+  buildW2cSetupMessage,
   isVerifyButton,
   parseFilterCursor,
   parseResultCursor,
@@ -105,15 +110,72 @@ async function resolveVerifyRole(guild) {
   return roles.find((role) => role.name.toLowerCase() === config.verifyRoleName.toLowerCase()) ?? null;
 }
 
+function payloadForEdit(message) {
+  const { ephemeral, ...payload } = message;
+  return payload;
+}
+
+async function canAssignRole(guild, role) {
+  if (!guild || !role) return false;
+  const botMember = await guild.members.fetchMe();
+  return (
+    botMember.permissions.has(PermissionsBitField.Flags.ManageRoles) &&
+    botMember.roles.highest.comparePositionTo(role) > 0
+  );
+}
+
 async function verifyMember(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const role = await resolveVerifyRole(interaction.guild);
   if (!role) {
-    await interaction.reply(buildVerifyRoleMissingMessage(config.verifyRoleName));
+    await interaction.editReply(payloadForEdit(buildVerifyRoleMissingMessage(config.verifyRoleName)));
     return;
   }
 
-  await interaction.member.roles.add(role);
-  await interaction.reply(buildVerifySuccessMessage(role.name));
+  let canAssign = false;
+  try {
+    canAssign = await canAssignRole(interaction.guild, role);
+  } catch (error) {
+    console.error("Verify permission check failed:", error);
+  }
+
+  if (!canAssign) {
+    await interaction.editReply(payloadForEdit(buildVerifyPermissionErrorMessage(role.name)));
+    return;
+  }
+
+  const member = await interaction.guild.members.fetch(interaction.user.id);
+  if (member.roles.cache.has(role.id)) {
+    await interaction.editReply(payloadForEdit(buildAlreadyVerifiedMessage(role.name)));
+    return;
+  }
+
+  try {
+    await member.roles.add(role);
+    await interaction.editReply(payloadForEdit(buildVerifySuccessMessage(role.name)));
+  } catch (error) {
+    console.error("Verify role assignment failed:", error);
+    await interaction.editReply(payloadForEdit(buildVerifyPermissionErrorMessage(role.name)));
+  }
+}
+
+async function replyOwnerOnly(interaction) {
+  if (interaction.user.id === config.welcomeOwnerId) return false;
+  await interaction.reply(buildOwnerOnlyCommandMessage(config.welcomeOwnerId));
+  return true;
+}
+
+async function replySetupCheck(interaction) {
+  const role = await resolveVerifyRole(interaction.guild);
+  await interaction.reply(
+    buildSetupCheckMessage({
+      allowedChannelId: config.allowedChannelId,
+      currentChannelId: interaction.channelId,
+      role,
+      roleError: config.verifyRoleName,
+      canManageRoles: role ? await canAssignRole(interaction.guild, role) : false,
+    }),
+  );
 }
 
 client.once(Events.ClientReady, async (readyClient) => {
@@ -155,11 +217,24 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     if (interaction.isChatInputCommand() && interaction.commandName === "welcome") {
-      if (interaction.user.id !== config.welcomeOwnerId) {
-        await interaction.reply(buildOwnerOnlyCommandMessage(config.welcomeOwnerId));
+      if (await replyOwnerOnly(interaction)) return;
+      await interaction.reply(buildWelcomeMessage());
+      return;
+    }
+
+    if (interaction.isChatInputCommand() && interaction.commandName === "setup-w2c") {
+      if (await replyOwnerOnly(interaction)) return;
+      if (interaction.channelId !== config.allowedChannelId) {
+        await interaction.reply(buildChannelOnlyMessage(config.allowedChannelId));
         return;
       }
-      await interaction.reply(buildWelcomeMessage());
+      await interaction.reply(buildW2cSetupMessage(config.allowedChannelId));
+      return;
+    }
+
+    if (interaction.isChatInputCommand() && interaction.commandName === "setup-check") {
+      if (await replyOwnerOnly(interaction)) return;
+      await replySetupCheck(interaction);
       return;
     }
 
@@ -198,7 +273,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.respond([]).catch(() => undefined);
       return;
     }
-    const fallback = buildErrorMessage();
+    const isFindCommand =
+      interaction.isChatInputCommand?.() && interaction.commandName === "find";
+    const isFindButton =
+      interaction.isButton?.() &&
+      (parseResultCursor(interaction.customId) || parseFilterCursor(interaction.customId));
+    const fallback = isFindCommand || isFindButton ? buildErrorMessage() : buildGenericCommandErrorMessage();
 
     if (interaction.deferred || interaction.replied) {
       await interaction.editReply(fallback).catch(() => undefined);

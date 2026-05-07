@@ -111,6 +111,35 @@ export function buildOwnerOnlyCommandMessage(ownerId) {
   };
 }
 
+export function buildSetupCheckMessage({
+  allowedChannelId,
+  currentChannelId,
+  role,
+  roleError,
+  canManageRoles,
+}) {
+  const isW2cChannel = currentChannelId === allowedChannelId;
+  const roleStatus = role
+    ? `Ready: **${truncate(role.name, 64)}**`
+    : `Missing: create **${truncate(roleError, 64)}** or set \`VERIFY_ROLE_ID\`.`;
+  const manageStatus = canManageRoles
+    ? "Ready: bot can manage roles."
+    : "Needs fix: give the bot Manage Roles and move its role above the verify role.";
+
+  const embed = new EmbedBuilder()
+    .setColor(role && canManageRoles && isW2cChannel ? SUCCESS_COLOR : WARNING_COLOR)
+    .setTitle("GunnaFinds setup check")
+    .setDescription("Use this before locking channels behind verification.")
+    .addFields(
+      { name: "W2C channel", value: isW2cChannel ? `Ready: <#${allowedChannelId}>` : `Run W2C setup in <#${allowedChannelId}>.`, inline: false },
+      { name: "Verify role", value: roleStatus, inline: false },
+      { name: "Role permissions", value: manageStatus, inline: false },
+    )
+    .setFooter({ text: "After this passes, lock channels for @everyone and allow Verified" });
+
+  return { embeds: [embed], components: [], ephemeral: true };
+}
+
 function emptyMessage(query) {
   const embed = new EmbedBuilder()
     .setColor(MUTED_COLOR)
@@ -165,12 +194,52 @@ export function buildErrorMessage() {
   };
 }
 
+export function buildGenericCommandErrorMessage() {
+  return {
+    embeds: [
+      guardEmbed(
+        "Command failed",
+        "That command did not complete cleanly. Check the bot logs or run `/setup-check` for setup diagnostics.",
+      ),
+    ],
+    components: [],
+    ephemeral: true,
+  };
+}
+
 export function buildVerifyRoleMissingMessage(roleName) {
   return {
     embeds: [
       guardEmbed(
         "Verify role is not ready",
         `I could not find the verification role. Create a role named **${truncate(roleName, 64)}** or set \`VERIFY_ROLE_ID\`, then try again.`,
+      ),
+    ],
+    components: [],
+    ephemeral: true,
+  };
+}
+
+export function buildVerifyPermissionErrorMessage(roleName) {
+  return {
+    embeds: [
+      guardEmbed(
+        "Verification needs permissions",
+        `I found **${truncate(roleName, 64)}**, but I cannot assign it. Give the bot **Manage Roles** and move the bot role above **${truncate(roleName, 64)}**.`,
+      ),
+    ],
+    components: [],
+    ephemeral: true,
+  };
+}
+
+export function buildAlreadyVerifiedMessage(roleName) {
+  return {
+    embeds: [
+      guardEmbed(
+        "Already verified",
+        `You already have **${truncate(roleName, 64)}**. Access is unlocked.`,
+        SUCCESS_COLOR,
       ),
     ],
     components: [],
@@ -241,6 +310,35 @@ export function buildWelcomeMessage() {
   const components = [
     new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId(VERIFY_BUTTON_ID).setLabel("Verify").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setLabel("Open catalog").setStyle(ButtonStyle.Link).setURL(SITE_URL),
+      new ButtonBuilder().setLabel("W2C finder").setStyle(ButtonStyle.Link).setURL(`${SITE_URL}/finder`),
+    ),
+  ];
+
+  return { embeds: [embed], components };
+}
+
+export function buildW2cSetupMessage(channelId) {
+  const embed = new EmbedBuilder()
+    .setColor(BRAND_COLOR)
+    .setAuthor({ name: "GunnaFinds W2C" })
+    .setTitle("Use this channel for product searches")
+    .setDescription(
+      [
+        `Run \`/find\` here in <#${channelId}> when you want product matches, QC images, prices, and agent buttons.`,
+        "Keep one request per message and use clean product names or model codes for better results.",
+      ].join("\n"),
+    )
+    .addFields(
+      { name: "Good searches", value: "`jordan 4 black cat`, `nike tech fleece`, `balenciaga track black`", inline: false },
+      { name: "What you get", value: "Matched products, preview images, listed price, catalog link, and agent checkout buttons.", inline: false },
+      { name: "If it misses", value: "Try fewer words, remove seller names, or turn the QC filter off.", inline: false },
+    )
+    .setImage(OPEN_GRAPH_IMAGE_URL)
+    .setFooter({ text: "W2C searches stay cleaner when everyone uses one channel" });
+
+  const components = [
+    new ActionRowBuilder().addComponents(
       new ButtonBuilder().setLabel("Open catalog").setStyle(ButtonStyle.Link).setURL(SITE_URL),
       new ButtonBuilder().setLabel("W2C finder").setStyle(ButtonStyle.Link).setURL(`${SITE_URL}/finder`),
     ),
