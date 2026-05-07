@@ -66,7 +66,7 @@ test("readConfig updates the repo before restart by default", () => {
   });
 
   assert.equal(config.updateBeforeRestart, true);
-  assert.equal(config.updateCommand, "git pull --ff-only origin main && npm ci --omit=dev");
+  assert.equal(config.updateCommand, "node scripts/self-update.mjs");
 });
 
 test("readConfig allows restart repo update overrides", () => {

@@ -122,8 +122,13 @@ production dependencies:
 
 ```txt
 BOT_UPDATE_BEFORE_RESTART=true
-BOT_UPDATE_COMMAND=git pull --ff-only origin main && npm ci --omit=dev
+BOT_UPDATE_COMMAND=node scripts/self-update.mjs
 ```
+
+The self-updater uses `git pull --ff-only origin main` when the deployed folder
+is a Git checkout. If the bot is running from copied files without `.git`, it
+downloads the latest GitHub `main` archive, extracts it over the current bot
+folder, runs `npm ci --omit=dev`, then restarts.
 
 ## Discord Restart Command
 

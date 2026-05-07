@@ -77,7 +77,7 @@ test("updateBotFromRepo runs the configured update command", async () => {
   await updateBotFromRepo(
     {
       updateBeforeRestart: true,
-      updateCommand: "git pull --ff-only origin main && npm ci --omit=dev",
+      updateCommand: "node scripts/self-update.mjs",
     },
     {
       execFn: (command, options, callback) => {
@@ -90,7 +90,7 @@ test("updateBotFromRepo runs the configured update command", async () => {
 
   assert.deepEqual(commands, [
     {
-      command: "git pull --ff-only origin main && npm ci --omit=dev",
+      command: "node scripts/self-update.mjs",
       maxBuffer: 5 * 1024 * 1024,
     },
   ]);

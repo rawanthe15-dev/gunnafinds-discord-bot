@@ -3,7 +3,7 @@ const OLD_VERCEL_SITE_URL = "https://repgunna.vercel.app";
 const DEFAULT_FINDS_CHANNEL_ID = "1502045050136428556";
 const DEFAULT_PROCESS_NAME = "gunnafinds-bot";
 const DEFAULT_RESTART_EXIT_CODE = 1;
-const DEFAULT_UPDATE_COMMAND = "git pull --ff-only origin main && npm ci --omit=dev";
+const DEFAULT_UPDATE_COMMAND = "node scripts/self-update.mjs";
 
 function normalizeSiteUrl(value) {
   const siteUrl = value.replace(/\/+$/, "");
