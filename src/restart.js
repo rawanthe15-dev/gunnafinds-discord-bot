@@ -9,14 +9,47 @@ export function canRestartBot(interaction, config) {
   return Boolean(interaction.memberPermissions?.has?.(PermissionFlagsBits.ManageGuild));
 }
 
-export function queueBotRestart(command, delayMs = 750) {
-  if (!command) throw new Error("Missing restart command");
+function normalizeRestartConfig(value) {
+  if (typeof value === "string") {
+    return {
+      restartMode: "command",
+      restartCommand: value,
+      restartExitCode: 1,
+    };
+  }
 
-  const timer = setTimeout(() => {
-    exec(command, (error, stdout, stderr) => {
-      if (stdout) console.log(stdout.trim());
-      if (stderr) console.error(stderr.trim());
-      if (error) console.error("Bot restart failed:", error.message);
+  return {
+    restartMode: value?.restartMode ?? "command",
+    restartCommand: value?.restartCommand,
+    restartExitCode: value?.restartExitCode ?? 1,
+  };
+}
+
+export function queueBotRestart(restartConfig, options = {}) {
+  const config = normalizeRestartConfig(restartConfig);
+  const {
+    delayMs = 750,
+    setTimeoutFn = setTimeout,
+    execFn = exec,
+    exitFn = process.exit.bind(process),
+    logger = console,
+  } = options;
+  const timer = setTimeoutFn(() => {
+    if (config.restartMode === "exit") {
+      logger.warn(`Restarting bot by exiting process with code ${config.restartExitCode}`);
+      exitFn(config.restartExitCode);
+      return;
+    }
+
+    if (!config.restartCommand) {
+      logger.error("Bot restart failed: missing restart command");
+      return;
+    }
+
+    execFn(config.restartCommand, (error, stdout, stderr) => {
+      if (stdout) logger.log(stdout.trim());
+      if (stderr) logger.error(stderr.trim());
+      if (error) logger.error("Bot restart failed:", error.message);
     });
   }, delayMs);
 

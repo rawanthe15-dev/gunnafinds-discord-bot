@@ -2,6 +2,7 @@ const CANONICAL_SITE_URL = "https://repgunna.xyz";
 const OLD_VERCEL_SITE_URL = "https://repgunna.vercel.app";
 const DEFAULT_FINDS_CHANNEL_ID = "1502045050136428556";
 const DEFAULT_PROCESS_NAME = "gunnafinds-bot";
+const DEFAULT_RESTART_EXIT_CODE = 1;
 
 function normalizeSiteUrl(value) {
   const siteUrl = value.replace(/\/+$/, "");
@@ -28,6 +29,29 @@ function defaultRestartCommand(processName) {
   ].join(" ");
 }
 
+function panelHostDetected(env) {
+  return Boolean(env.PTERODACTYL_SERVER_UUID || env.SERVER_MEMORY);
+}
+
+function restartMode(env) {
+  const explicit = env.BOT_RESTART_MODE?.trim().toLowerCase();
+  if (explicit) {
+    if (explicit !== "command" && explicit !== "exit") {
+      throw new Error("BOT_RESTART_MODE must be command or exit");
+    }
+    return explicit;
+  }
+
+  return env.BOT_RESTART_COMMAND || !panelHostDetected(env) ? "command" : "exit";
+}
+
+function restartExitCode(env) {
+  const parsed = Number.parseInt(env.BOT_RESTART_EXIT_CODE ?? "", 10);
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= 255
+    ? parsed
+    : DEFAULT_RESTART_EXIT_CODE;
+}
+
 export function readConfig(env = process.env) {
   const token = env.DISCORD_TOKEN;
   const clientId = env.CLIENT_ID ?? env.DISCORD_CLIENT_ID;
@@ -50,6 +74,8 @@ export function readConfig(env = process.env) {
   const websiteChannelId = env.WEBSITE_CHANNEL_ID;
   const restartProcessName = env.BOT_PROCESS_NAME ?? DEFAULT_PROCESS_NAME;
   const restartCommand = env.BOT_RESTART_COMMAND || defaultRestartCommand(restartProcessName);
+  const restartModeValue = restartMode(env);
+  const restartExitCodeValue = restartExitCode(env);
   const restartUserIds = splitIds(
     env.BOT_RESTART_USER_IDS ?? env.DISCORD_OWNER_IDS ?? env.OWNER_IDS ?? "",
   );
@@ -81,7 +107,9 @@ export function readConfig(env = process.env) {
     announcementsChannelId,
     updatesChannelId,
     websiteChannelId,
+    restartMode: restartModeValue,
     restartCommand,
+    restartExitCode: restartExitCodeValue,
     restartUserIds,
     stateFile,
   };

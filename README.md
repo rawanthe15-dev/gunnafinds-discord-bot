@@ -109,6 +109,14 @@ If wyspbyte uses a custom process manager, set:
 BOT_RESTART_COMMAND=your restart command
 ```
 
+On Pterodactyl/Wyspbyte-style panel hosting, the bot defaults to restart by
+exiting with code `1` so the host can bring it back. You can force either mode:
+
+```txt
+BOT_RESTART_MODE=exit
+BOT_RESTART_EXIT_CODE=1
+```
+
 ## Discord Restart Command
 
 `/restart` restarts the bot from Discord. By default it works for members with

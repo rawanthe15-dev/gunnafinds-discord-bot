@@ -49,3 +49,14 @@ test("readConfig builds restart controls", () => {
   assert.match(config.restartCommand, /pm2 restart custom-bot/);
   assert.deepEqual(config.restartUserIds, ["123", "456"]);
 });
+
+test("readConfig uses process exit restart mode on panel hosting", () => {
+  const config = readConfig({
+    DISCORD_TOKEN: "token",
+    CLIENT_ID: "client",
+    PTERODACTYL_SERVER_UUID: "server-uuid",
+  });
+
+  assert.equal(config.restartMode, "exit");
+  assert.equal(config.restartExitCode, 1);
+});

@@ -690,7 +690,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return;
       }
       await interaction.reply(buildRestartQueuedMessage());
-      queueBotRestart(config.restartCommand);
+      queueBotRestart(config);
       return;
     }
 

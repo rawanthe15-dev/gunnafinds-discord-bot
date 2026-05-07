@@ -376,8 +376,8 @@ export function buildRestartQueuedMessage() {
   return {
     embeds: [
       guardEmbed(
-        "Restart sent",
-        "I sent the restart command. The bot should come back online in a moment.",
+        "Restarting now",
+        "The bot process is restarting. It should come back online in a moment.",
         SUCCESS_COLOR,
       ),
     ],

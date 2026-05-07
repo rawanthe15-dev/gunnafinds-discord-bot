@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { PermissionFlagsBits } from "discord.js";
-import { canRestartBot } from "./restart.js";
+import { canRestartBot, queueBotRestart } from "./restart.js";
 
 test("canRestartBot allows configured restart operators", () => {
   const interaction = {
@@ -30,4 +30,43 @@ test("canRestartBot falls back to Manage Server permission", () => {
   };
 
   assert.equal(canRestartBot(interaction, { restartUserIds: [] }), true);
+});
+
+test("queueBotRestart exits the process in exit mode", () => {
+  const exits = [];
+
+  queueBotRestart(
+    { restartMode: "exit", restartExitCode: 1 },
+    {
+      setTimeoutFn: (callback) => {
+        callback();
+        return { unref() {} };
+      },
+      exitFn: (code) => exits.push(code),
+      logger: { log() {}, error() {}, warn() {} },
+    },
+  );
+
+  assert.deepEqual(exits, [1]);
+});
+
+test("queueBotRestart runs a restart command in command mode", () => {
+  const commands = [];
+
+  queueBotRestart(
+    { restartMode: "command", restartCommand: "pm2 restart gunnafinds-bot" },
+    {
+      setTimeoutFn: (callback) => {
+        callback();
+        return { unref() {} };
+      },
+      execFn: (command, callback) => {
+        commands.push(command);
+        callback(null, "", "");
+      },
+      logger: { log() {}, error() {}, warn() {} },
+    },
+  );
+
+  assert.deepEqual(commands, ["pm2 restart gunnafinds-bot"]);
 });
